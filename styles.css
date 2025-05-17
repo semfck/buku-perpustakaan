@@ -10,12 +10,10 @@ body {
     border-radius: 1rem;
     box-shadow: 0 2px 10px 0 rgba(40, 40, 40, 0.08);
   }
-  
   .navbar .navbar-brand i {
     color: #a9833a;
     font-size: 1.6rem;
   }
-  
   .navbar .navbar-nav .nav-link {
     font-weight: 500;
     color: #784421 !important;
@@ -35,7 +33,6 @@ body {
     box-shadow: 0 2px 16px 0 rgba(160, 140, 110, 0.07);
     border: none;
   }
-  
   .card-header {
     background: linear-gradient(90deg, #ffe9c6 0%, #fffbe7 100%);
     border-radius: 1rem 1rem 0 0 !important;
@@ -45,7 +42,6 @@ body {
     letter-spacing: 0.5px;
     font-size: 1.09rem;
   }
-  
   .card-body {
     background: rgba(255,255,255,0.97);
     border-radius: 0 0 1rem 1rem;
@@ -62,7 +58,6 @@ body {
     background: linear-gradient(90deg, #e4b96d 0%, #a9833a 100%);
     color: #fff;
   }
-  
   .btn-success, .btn-success:focus, .btn-success:active {
     background: linear-gradient(90deg, #3aa85d 0%, #70e4a2 100%);
     border: none;
@@ -72,7 +67,6 @@ body {
   .btn-success:hover {
     background: linear-gradient(90deg, #70e4a2 0%, #3aa85d 100%);
   }
-  
   .btn-danger, .btn-danger:focus, .btn-danger:active {
     background: linear-gradient(90deg, #d34a39 0%, #fa9a8b 100%);
     border: none;
@@ -82,7 +76,6 @@ body {
   .btn-danger:hover {
     background: linear-gradient(90deg, #fa9a8b 0%, #d34a39 100%);
   }
-  
   .btn-warning, .btn-warning:focus, .btn-warning:active {
     background: linear-gradient(90deg, #e7c04b 0%, #ffe488 100%);
     border: none;
@@ -94,28 +87,29 @@ body {
     color: #7c5a00;
   }
   
-  .badge.bg-success,
-  .badge.bg-warning,
-  .badge.bg-danger {
-    font-size: 0.93em;
-    letter-spacing: .3px;
-  }
-  
   .badge.bg-category-fiksi {
     background: linear-gradient(90deg, #ffd1dc 0%, #ffe4fa 100%);
     color: #a63c6b;
+    font-weight: 600;
+    font-size: 0.98em;
   }
   .badge.bg-category-nonfiksi {
     background: linear-gradient(90deg, #d6f5e3 0%, #f0fff3 100%);
     color: #18714b;
+    font-weight: 600;
+    font-size: 0.98em;
   }
   .badge.bg-category-teknologi {
     background: linear-gradient(90deg, #d8eafd 0%, #f0f6ff 100%);
     color: #185794;
+    font-weight: 600;
+    font-size: 0.98em;
   }
   .badge.bg-category-sejarah {
     background: linear-gradient(90deg, #f9e8d2 0%, #fff7ec 100%);
     color: #8c5d14;
+    font-weight: 600;
+    font-size: 0.98em;
   }
   
   .table thead th {
@@ -125,14 +119,12 @@ body {
     font-size: 1rem;
     font-weight: 600;
   }
-  
   .table-striped > tbody > tr:nth-of-type(odd) {
     background-color: #fffbe7;
   }
   .table-hover tbody tr:hover {
     background: #ffe9c6;
   }
-  
   .table td, .table th {
     vertical-align: middle;
   }
@@ -142,23 +134,18 @@ body {
     color: #a9833a !important;
     cursor: not-allowed;
   }
-  
   input[type="date"]:invalid {
     color: #bdbdbd;
   }
-  
   input:invalid, select:invalid, textarea:invalid {
     border-color: #d34a39 !important;
     box-shadow: 0 0 0 1.5px #d34a3933;
   }
-  
-  /* Field error message */
   .invalid-feedback {
     color: #d34a39 !important;
     font-size: 0.95em;
   }
   
-  /* Alert style */
   #alertContainer .alert {
     min-width: 250px;
     border-radius: .75rem;
@@ -167,7 +154,6 @@ body {
     margin: 0 auto;
     max-width: 480px;
   }
-  
   #loadingOverlay {
     background: rgba(255, 255, 230, 0.92);
     z-index: 3000;
@@ -177,29 +163,24 @@ body {
     position:fixed;
     top:0;left:0;width:100vw;height:100vh;
   }
-  
   .spinner-border {
     color: #a9833a;
     width: 3rem;
     height: 3rem;
   }
-  
   .form-label {
     color: #8c6a2c;
     font-weight: 500;
     letter-spacing: .2px;
   }
-  
   .form-control:focus, .form-select:focus {
     border-color: #e4b96d;
     box-shadow: 0 0 8px 0 #ffe9c6;
   }
-  
   #charCount {
     font-weight: bold;
     color: #a9833a;
   }
-  
   .modal-content {
     border-radius: 1rem;
     box-shadow: 0 4px 32px 0 rgba(168, 131, 58, 0.08);
@@ -213,14 +194,11 @@ body {
   .modal-footer {
     border-top: none;
   }
-  
   #adminStatus {
     font-size: 1em;
     padding: 7px 15px;
     letter-spacing: 1px;
   }
-  
-  /* Responsive tweaks */
   @media (max-width: 992px) {
     .navbar .btn {
       min-width: unset;
@@ -244,7 +222,6 @@ body {
       font-size: 1.2rem;
     }
   }
-  
   ::-webkit-scrollbar {
     width: 8px;
     background: #fffbe7;
