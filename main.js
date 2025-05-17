@@ -177,327 +177,430 @@ const DUMMY_BUKU = [
 let semuaBuku = [];
 let filterKategori = "Semua";
 async function fetchBuku() {
-  let snapshot = await db.collection("buku").get();
-  semuaBuku = [];
-  snapshot.forEach(doc => semuaBuku.push({ id: doc.id, ...doc.data() }));
-  if (semuaBuku.length < 16) {
-    DUMMY_BUKU.forEach(d => {
-      if (!semuaBuku.some(b => b.judul === d.judul && b.kategori === d.kategori)) {
-        semuaBuku.push({ ...d, id: 'dummy-'+d.judul.replace(/\s/g,'') });
-      }
-    });
+  try {
+    let snapshot = await db.collection("buku").get();
+    semuaBuku = [];
+    snapshot.forEach(doc => semuaBuku.push({ id: doc.id, ...doc.data() }));
+    if (semuaBuku.length < 16) {
+      DUMMY_BUKU.forEach(d => {
+        if (!semuaBuku.some(b => b.judul === d.judul && b.kategori === d.kategori)) {
+          semuaBuku.push({ ...d, id: 'dummy-'+d.judul.replace(/\s/g,''), status: "tersedia" });
+        }
+      });
+    }
+    renderBukuGrid();
+    renderBukuSelect();
+    window.semuaBuku = semuaBuku;
+  } catch (error) {
+    console.error("Error fetching books:", error);
+    showAlert('alertPinjam', 'danger', 'Gagal memuat daftar buku');
   }
-  renderBukuGrid();
-  renderBukuSelect();
-  window.semuaBuku = semuaBuku;
 }
 
-// PATCH: Agar event dan select sync
+// Fungsi untuk memperbarui tampilan judul buku terpilih
 function updateJudulBukuTerpilih() {
   const select = document.getElementById('bukuDipinjam');
   const judulDiv = document.getElementById('judulBukuTerpilih');
   if (!select || !judulDiv) return;
-  let val = select.value;
-  let label = '';
-  if (window.semuaBuku && val) {
-    let b = window.semuaBuku.find(x=>x.id === val);
-    if (b) label = b.judul + (b.isbn ? " (ISBN: "+b.isbn+")" : "");
+  const selectedValue = select.value;
+  if (!selectedValue) {
+    judulDiv.textContent = "";
+    return;
   }
-  if (!label && select.selectedOptions && select.selectedOptions.length)
-    label = select.selectedOptions[0].textContent;
-  judulDiv.textContent = val ? "Judul: " + label : "";
+  const buku = window.semuaBuku.find(b => b.id === selectedValue);
+  if (buku) {
+    judulDiv.textContent = `Judul: ${buku.judul}${buku.isbn ? ` (ISBN: ${buku.isbn})` : ''}`;
+  } else {
+    judulDiv.textContent = "";
+  }
 }
 
-// PATCH: renderBukuGrid agar selalu trigger event change & visual select
+// Render grid buku dengan tombol pinjam yang berfungsi
 function renderBukuGrid() {
   const daftarBuku = document.getElementById('daftarBuku');
-  let filter = filterKategori === "Semua"
+  if (!daftarBuku) return;
+  const filteredBooks = filterKategori === "Semua"
     ? semuaBuku
     : semuaBuku.filter(b => b.kategori === filterKategori);
-  daftarBuku.innerHTML = "";
-  if (filter.length === 0) {
+  if (filteredBooks.length === 0) {
     daftarBuku.innerHTML = "<div class='text-muted text-center py-4'>Belum ada buku pada kategori ini.</div>";
     return;
   }
-  filter.forEach(buku => {
-    let isDummy = buku.id.startsWith('dummy-');
-    let isDipinjam = buku.status === "dipinjam";
-    let btnDisabled = isDummy ? 'disabled title="Buku demo, hanya admin yang bisa menambah"' : (isDipinjam ? 'disabled title="Buku sedang dipinjam"' : '');
-    let statusHtml = isDummy ? '' : `<div class="status-buku ${isDipinjam ? 'dipinjam' : 'tersedia'}">${isDipinjam ? 'Dipinjam' : 'Tersedia'}</div>`;
-    daftarBuku.innerHTML += `
+  daftarBuku.innerHTML = filteredBooks.map(buku => {
+    const isDummy = buku.id.startsWith('dummy-');
+    const isDipinjam = buku.status === "dipinjam";
+    const btnDisabled = isDummy || isDipinjam;
+    const statusHtml = isDummy ? '' : `
+      <div class="status-buku ${isDipinjam ? 'dipinjam' : 'tersedia'}">
+        ${isDipinjam ? 'Dipinjam' : 'Tersedia'}
+      </div>
+    `;
+    return `
       <div class="card-buku">
         <div class="judul">${buku.judul}</div>
         <div class="pengarang">Pengarang: ${buku.pengarang}</div>
         <div class="kategori-badge">${buku.kategori}</div>
         <div class="tahun">Tahun: ${buku.tahun}</div>
-        <div class="isbn">ISBN: ${buku.isbn}</div>
+        <div class="isbn">ISBN: ${buku.isbn || '-'}</div>
         ${statusHtml}
-        <button class="btn-pinjam" data-id="${buku.id}" ${btnDisabled}>Pinjam</button>
+        <button class="btn-pinjam" data-id="${buku.id}" 
+          ${btnDisabled ? 'disabled' : ''}
+          ${isDummy ? 'title="Buku demo, hanya admin yang bisa menambah"' : ''}
+          ${isDipinjam ? 'title="Buku sedang dipinjam"' : ''}>
+          Pinjam
+        </button>
       </div>
     `;
-  });
+  }).join('');
   document.querySelectorAll('.btn-pinjam').forEach(btn => {
-    btn.onclick = function() {
+    btn.addEventListener('click', function() {
       const bukuId = this.dataset.id;
-      if (bukuId.startsWith('dummy-')) {
-        alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
-        return;
-      }
-      let buku = semuaBuku.find(b=>b.id===bukuId);
-      if (!buku || buku.status === "dipinjam") {
-        showAlert('alertPinjam','danger','Buku sedang dipinjam!');
-        return;
-      }
-      const select = document.getElementById('bukuDipinjam');
-      select.value = bukuId;
-      select.classList.add('highlighted');
-      let event = new Event('change', {bubbles:true});
-      select.dispatchEvent(event);
-      setTimeout(()=>select.classList.remove('highlighted'), 700);
-      updateJudulBukuTerpilih();
-      document.getElementById('formPinjamSection').scrollIntoView({behavior:"smooth"});
-    };
+      handlePinjamBuku(bukuId);
+    });
   });
 }
+
+// Fungsi untuk menangani aksi pinjam buku
+function handlePinjamBuku(bukuId) {
+  if (bukuId.startsWith('dummy-')) {
+    alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
+    return;
+  }
+  const buku = semuaBuku.find(b => b.id === bukuId);
+  if (!buku) {
+    showAlert('alertPinjam', 'danger', 'Buku tidak ditemukan!');
+    return;
+  }
+  if (buku.status === "dipinjam") {
+    showAlert('alertPinjam', 'danger', 'Buku sedang dipinjam!');
+    return;
+  }
+  const select = document.getElementById('bukuDipinjam');
+  select.value = bukuId;
+  select.classList.add('highlighted');
+  setTimeout(() => select.classList.remove('highlighted'), 700);
+  updateJudulBukuTerpilih();
+  document.getElementById('formPinjamSection').scrollIntoView({behavior: "smooth"});
+}
+
+// Event listener untuk filter kategori
 document.querySelectorAll('.kategori-btn').forEach(btn => {
-  btn.onclick = function() {
-    document.querySelectorAll('.kategori-btn').forEach(b=>b.classList.remove('active'));
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.kategori-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
     filterKategori = this.dataset.kategori;
     renderBukuGrid();
-  };
+  });
 });
 
-// PATCH: renderBukuSelect agar event change tetap dipicu dan judul update
+// Render select buku untuk form peminjaman
 function renderBukuSelect() {
   const bukuDipinjam = document.getElementById('bukuDipinjam');
-  let prevValue = bukuDipinjam.value; // simpan value sebelumnya
+  if (!bukuDipinjam) return;
+  const prevValue = bukuDipinjam.value;
   bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
-  let available = 0;
+  let availableBooks = 0;
   semuaBuku.forEach(b => {
-    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia")) {
-      bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul} (${b.isbn})</option>`;
-      available++;
+    if (!b.id.startsWith('dummy-') && b.status === "tersedia") {
+      bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul}${b.isbn ? ` (${b.isbn})` : ''}</option>`;
+      availableBooks++;
     }
   });
-  bukuDipinjam.disabled = available === 0;
-  if (prevValue && bukuDipinjam.querySelector('option[value="'+prevValue+'"]')) {
-    bukuDipinjam.value = prevValue; // restore value jika masih ada
-  } else {
-    bukuDipinjam.value = "";
+  bukuDipinjam.disabled = availableBooks === 0;
+  if (prevValue && bukuDipinjam.querySelector(`option[value="${prevValue}"]`)) {
+    bukuDipinjam.value = prevValue;
   }
-  let alertEl = document.getElementById('alertPinjam');
-  if (available === 0 && alertEl) {
-    alertEl.innerHTML = '<div class="alert alert-warning">Tidak ada buku yang tersedia untuk dipinjam.</div>';
-  } else if (alertEl) {
-    alertEl.innerHTML = '';
+  const alertEl = document.getElementById('alertPinjam');
+  if (alertEl) {
+    alertEl.innerHTML = availableBooks === 0 
+      ? '<div class="alert alert-warning">Tidak ada buku yang tersedia untuk dipinjam.</div>' 
+      : '';
   }
-  let event = new Event('change', {bubbles:true});
-  bukuDipinjam.dispatchEvent(event);
-  updateJudulBukuTerpilih();
+  bukuDipinjam.dispatchEvent(new Event('change'));
 }
-
-// PATCH: Saat DOM ready, event listener judul buku terpilih lebih andal
-document.addEventListener("DOMContentLoaded", function() {
-  const select = document.getElementById('bukuDipinjam');
-  if (!select) return;
-  select.addEventListener('change', updateJudulBukuTerpilih);
-  updateJudulBukuTerpilih();
-  fetchBuku(); // Pastikan fetch buku dipanggil saat halaman siap
-  renderRiwayat();
-});
 
 // Peminjaman
-let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam")||"[]");
-document.getElementById('formPinjam').addEventListener('submit',async function(e){
+let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam") || "[]");
+
+// Form submit peminjaman
+document.getElementById('formPinjam').addEventListener('submit', async function(e) {
   e.preventDefault();
-  let nama = document.getElementById('namaPeminjam').value.trim();
-  let idPeminjam = document.getElementById('idPeminjam').value.trim();
-  let bukuId = document.getElementById('bukuDipinjam').value;
-  let tglPinjam = document.getElementById('tglPinjam').value;
-  let tglKembali = document.getElementById('tglKembali').value;
-  if (!bukuId) return showAlert('alertPinjam','danger','Buku wajib dipilih!');
-  let buku = semuaBuku.find(b=>b.id===bukuId);
-  if (!buku) return showAlert('alertPinjam','danger','Buku tidak ditemukan!');
-  if (buku.status === "dipinjam") return showAlert('alertPinjam','danger','Buku sedang dipinjam!');
-  let data = {
-    nama,idPeminjam,bukuId,
+  const nama = document.getElementById('namaPeminjam').value.trim();
+  const idPeminjam = document.getElementById('idPeminjam').value.trim();
+  const bukuId = document.getElementById('bukuDipinjam').value;
+  const tglPinjam = document.getElementById('tglPinjam').value;
+  const tglKembali = document.getElementById('tglKembali').value;
+  if (!bukuId) {
+    showAlert('alertPinjam', 'danger', 'Buku wajib dipilih!');
+    return;
+  }
+  const buku = semuaBuku.find(b => b.id === bukuId);
+  if (!buku) {
+    showAlert('alertPinjam', 'danger', 'Buku tidak ditemukan!');
+    return;
+  }
+  if (buku.status === "dipinjam") {
+    showAlert('alertPinjam', 'danger', 'Buku sedang dipinjam!');
+    return;
+  }
+  const data = {
+    nama,
+    idPeminjam,
+    bukuId,
     tglPinjam,
     tglKembali,
-    judul:buku.judul,
-    pengarang:buku.pengarang,
-    kategori:buku.kategori,
-    isbn:buku.isbn
+    judul: buku.judul,
+    pengarang: buku.pengarang,
+    kategori: buku.kategori,
+    isbn: buku.isbn
   };
-  await db.collection("peminjaman").add({
-    ...data,
-    tglPinjam: new Date(tglPinjam),
-    tglKembali: new Date(tglKembali),
-    status: "dipinjam",
-    tglKembaliAsli: null
-  });
-  await db.collection("buku").doc(bukuId).update({status: "dipinjam"});
-  pinjamList.push(data);
-  localStorage.setItem("riwayatPinjam",JSON.stringify(pinjamList));
-  renderRiwayat();
-  showStrukPinjam(data);
-  this.reset();
-  await fetchBuku();
-  renderBukuSelect();
+  try {
+    await db.collection("peminjaman").add({
+      ...data,
+      tglPinjam: new Date(tglPinjam),
+      tglKembali: new Date(tglKembali),
+      status: "dipinjam",
+      tglKembaliAsli: null
+    });
+    await db.collection("buku").doc(bukuId).update({ status: "dipinjam" });
+    pinjamList.push(data);
+    localStorage.setItem("riwayatPinjam", JSON.stringify(pinjamList));
+    renderRiwayat();
+    showStrukPinjam(data);
+    this.reset();
+    await fetchBuku();
+    renderBukuSelect();
+    showAlert('alertPinjam', 'success', 'Buku berhasil dipinjam!');
+  } catch (error) {
+    console.error("Error borrowing book:", error);
+    showAlert('alertPinjam', 'danger', 'Gagal meminjam buku');
+  }
 });
-function showAlert(id,type,msg){
-  let el = document.getElementById(id);
+
+// Fungsi untuk menampilkan alert
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
   el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-  setTimeout(()=>el.innerHTML="",2300);
+  setTimeout(() => el.innerHTML = "", 2300);
 }
 
-// Enh: Hitung denda dan tampilkan invoice/struk
+// Hitung denda
 function hitungDenda(tglKembali, tglKembaliAsli) {
   if (!tglKembali || !tglKembaliAsli) return 0;
-  let tglTarget = new Date(tglKembali);
-  let tglAsli = new Date(tglKembaliAsli);
-  let hariTelat = Math.floor((tglAsli - tglTarget) / (1000*60*60*24));
+  const tglTarget = new Date(tglKembali);
+  const tglAsli = new Date(tglKembaliAsli);
+  const hariTelat = Math.floor((tglAsli - tglTarget) / (1000 * 60 * 60 * 24));
   return hariTelat > 0 ? hariTelat * 5000 : 0;
 }
 
-// Riwayat
+// Render riwayat peminjaman
 function renderRiwayat() {
   const el = document.getElementById('riwayatTabel');
-  if(pinjamList.length===0) {
+  if (!el) return;
+  if (pinjamList.length === 0) {
     el.innerHTML = "<div class='text-muted text-center p-2'>Belum ada data peminjaman.</div>";
     return;
   }
-  let html = `<table class="riwayat-tabel"><thead>
-    <tr>
-      <th>Nama</th>
-      <th>ID</th>
-      <th>Judul Buku</th>
-      <th>Kategori</th>
-      <th>Tgl Pinjam</th>
-      <th>Tgl Kembali</th>
-      <th>Struk/Invoice</th>
-    </tr></thead><tbody>`;
-  pinjamList.forEach((p,i)=>{
-    html += `<tr>
-      <td>${p.nama}</td>
-      <td>${p.idPeminjam}</td>
-      <td>${p.judul}</td>
-      <td>${p.kategori}</td>
-      <td>${formatTanggal(p.tglPinjam)}</td>
-      <td>${formatTanggal(p.tglKembali)}</td>
-      <td><button class="btn-struk" onclick="showStrukPinjamByIndex(${i})">Lihat</button></td>
-    </tr>`;
-  });
-  html += "</tbody></table>";
+  const html = `
+    <table class="riwayat-tabel">
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>ID</th>
+          <th>Judul Buku</th>
+          <th>Kategori</th>
+          <th>Tgl Pinjam</th>
+          <th>Tgl Kembali</th>
+          <th>Struk/Invoice</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pinjamList.map((p, i) => `
+          <tr>
+            <td>${p.nama}</td>
+            <td>${p.idPeminjam}</td>
+            <td>${p.judul}</td>
+            <td>${p.kategori}</td>
+            <td>${formatTanggal(p.tglPinjam)}</td>
+            <td>${formatTanggal(p.tglKembali)}</td>
+            <td><button class="btn-struk" onclick="showStrukPinjamByIndex(${i})">Lihat</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
   el.innerHTML = html;
 }
-window.showStrukPinjamByIndex = function(i){
-  showStrukPinjam(pinjamList[i]);
-};
-function showStrukPinjam(data){
-  // Denda per hari Rp 5000 jika telat dari tglKembali
-  let tglKembaliAsli = data.tglKembaliAsli ? data.tglKembaliAsli : null;
-  let denda = 0;
-  let hariTelat = 0;
-  if (tglKembaliAsli) {
-    let tglTarget = new Date(data.tglKembali);
-    let tglAsli = new Date(tglKembaliAsli);
-    hariTelat = Math.floor((tglAsli - tglTarget)/(1000*60*60*24));
-    denda = hariTelat > 0 ? hariTelat*5000 : 0;
+
+// Tampilkan struk berdasarkan index
+window.showStrukPinjamByIndex = function(index) {
+  if (index >= 0 && index < pinjamList.length) {
+    showStrukPinjam(pinjamList[index]);
   }
-  let isi = `<div class="invoice-struk">
-    <div style="font-size:1.09rem">
-      <b>Invoice Peminjaman Buku</b><hr>
-      Nama: <b>${data.nama}</b><br>
-      ID: ${data.idPeminjam}<br>
-      Judul: ${data.judul}<br>
-      Kategori: ${data.kategori}<br>
-      Pengarang: ${data.pengarang}<br>
-      ISBN: ${data.isbn}<br>
-      Tanggal Pinjam: ${formatTanggal(data.tglPinjam)}<br>
-      Tanggal Kembali (target): ${formatTanggal(data.tglKembali)}<br>
-      ${tglKembaliAsli ? `Tanggal Kembali Sebenarnya: ${formatTanggal(tglKembaliAsli)}<br>` : ''}
-      <hr>
-      <b>Denda Terlambat: Rp ${denda.toLocaleString("id-ID")}</b> ${hariTelat>0 ? `(Terlambat ${hariTelat} hari)` : '(Tidak ada denda)' }<br>
-      <small>Harap kembalikan buku tepat waktu. Denda Rp 5.000/hari jika lewat dari tanggal kembali.</small>
+};
+
+// Tampilkan struk peminjaman
+function showStrukPinjam(data) {
+  const tglKembaliAsli = data.tglKembaliAsli || null;
+  const { denda, hariTelat } = calculateDenda(data.tglKembali, tglKembaliAsli);
+  const strukContent = `
+    <div class="invoice-struk">
+      <div style="font-size:1.09rem">
+        <b>Invoice Peminjaman Buku</b><hr>
+        Nama: <b>${data.nama}</b><br>
+        ID: ${data.idPeminjam}<br>
+        Judul: ${data.judul}<br>
+        Kategori: ${data.kategori}<br>
+        Pengarang: ${data.pengarang}<br>
+        ISBN: ${data.isbn || '-'}<br>
+        Tanggal Pinjam: ${formatTanggal(data.tglPinjam)}<br>
+        Tanggal Kembali (target): ${formatTanggal(data.tglKembali)}<br>
+        ${tglKembaliAsli ? `Tanggal Kembali Sebenarnya: ${formatTanggal(tglKembaliAsli)}<br>` : ''}
+        <hr>
+        <b>Denda Terlambat: Rp ${denda.toLocaleString("id-ID")}</b> 
+        ${hariTelat > 0 ? `(Terlambat ${hariTelat} hari)` : '(Tidak ada denda)'}<br>
+        <small>Harap kembalikan buku tepat waktu. Denda Rp 5.000/hari jika lewat dari tanggal kembali.</small>
+      </div>
     </div>
-  </div>`;
-  document.getElementById('isiStruk').innerHTML = isi;
+  `;
+  document.getElementById('isiStruk').innerHTML = strukContent;
   document.getElementById('modalStruk').classList.add('show');
 }
-document.getElementById('closeModal').onclick = () => {
+
+// Fungsi untuk menghitung denda
+function calculateDenda(tglKembali, tglKembaliAsli) {
+  if (!tglKembali || !tglKembaliAsli) return { denda: 0, hariTelat: 0 };
+  const tglTarget = new Date(tglKembali);
+  const tglAsli = new Date(tglKembaliAsli);
+  const hariTelat = Math.floor((tglAsli - tglTarget) / (1000 * 60 * 60 * 24));
+  const denda = hariTelat > 0 ? hariTelat * 5000 : 0;
+  return { denda, hariTelat };
+}
+
+// Tutup modal struk
+document.getElementById('closeModal').addEventListener('click', () => {
   document.getElementById('modalStruk').classList.remove('show');
-};
-window.onclick = function(event){
-  if(event.target === document.getElementById('modalStruk'))
+});
+// Tutup modal saat klik di luar
+window.addEventListener('click', function(event) {
+  if (event.target === document.getElementById('modalStruk')) {
     document.getElementById('modalStruk').classList.remove('show');
-};
+  }
+});
+
+// Format tanggal
 function formatTanggal(tgl) {
   if (!tgl) return '';
   if (typeof tgl === "object" && tgl.toDate) tgl = tgl.toDate();
   const d = new Date(tgl);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('id-ID');
+  return d.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
 }
 
 // Panel admin: daftar peminjaman
 async function renderAdminPeminjaman() {
-  let el = document.getElementById("adminDaftarPeminjaman");
+  const el = document.getElementById("adminDaftarPeminjaman");
   if (!el) return;
-  let snapshot = await db.collection("peminjaman").orderBy("tglPinjam","desc").get();
-  if (snapshot.empty) {
-    el.innerHTML = "<div class='text-muted'>Belum ada data peminjaman.</div>";
-    return;
-  }
-  let html = `<table class="riwayat-tabel"><thead>
-    <tr>
-      <th>Nama</th>
-      <th>ID</th>
-      <th>Buku</th>
-      <th>Tgl Pinjam</th>
-      <th>Tgl Kembali (target)</th>
-      <th>Tgl Kembali Real</th>
-      <th>Status</th>
-      <th>Denda</th>
-      <th>Aksi</th>
-    </tr></thead><tbody>`;
-  snapshot.forEach(doc=>{
-    let d = doc.data();
-    let hariTelat = 0, denda = 0;
-    if (d.tglKembaliAsli && d.tglKembali) {
-      let tglTarget = d.tglKembali.toDate ? d.tglKembali.toDate() : d.tglKembali;
-      let tglAsli = d.tglKembaliAsli.toDate ? d.tglKembaliAsli.toDate() : d.tglKembaliAsli;
-      hariTelat = Math.floor((new Date(tglAsli) - new Date(tglTarget))/(1000*60*60*24));
-      denda = hariTelat > 0 ? hariTelat*5000 : 0;
+  try {
+    const snapshot = await db.collection("peminjaman").orderBy("tglPinjam", "desc").get();
+    if (snapshot.empty) {
+      el.innerHTML = "<div class='text-muted'>Belum ada data peminjaman.</div>";
+      return;
     }
-    html += `<tr>
-      <td>${d.nama}</td>
-      <td>${d.idPeminjam}</td>
-      <td>${d.judul}</td>
-      <td>${formatTanggal(d.tglPinjam && d.tglPinjam.toDate ? d.tglPinjam.toDate() : d.tglPinjam)}</td>
-      <td>${formatTanggal(d.tglKembali && d.tglKembali.toDate ? d.tglKembali.toDate() : d.tglKembali)}</td>
-      <td>${d.tglKembaliAsli ? formatTanggal(d.tglKembaliAsli && d.tglKembaliAsli.toDate ? d.tglKembaliAsli.toDate() : d.tglKembaliAsli) : '-'}</td>
-      <td>${d.status || '-'}</td>
-      <td>Rp ${denda.toLocaleString("id-ID")}${hariTelat>0 ? `<br><span class="denda-late">Terlambat ${hariTelat} hari</span>` : ''}</td>
-      <td>
-        ${d.status === "dipinjam" ? `<button class="btn-admin btn-kembali" onclick="pengembalianBuku('${doc.id}','${d.bukuId}','${d.tglKembali}')">Konfirmasi<br>Kembali</button>` : ''}
-      </td>
-    </tr>`;
-  });
-  html += "</tbody></table>";
-  el.innerHTML = html;
+    const html = `
+      <table class="riwayat-tabel">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>ID</th>
+            <th>Buku</th>
+            <th>Tgl Pinjam</th>
+            <th>Tgl Kembali (target)</th>
+            <th>Tgl Kembali Real</th>
+            <th>Status</th>
+            <th>Denda</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${snapshot.docs.map(doc => {
+            const d = doc.data();
+            const { denda, hariTelat } = calculateDenda(d.tglKembali, d.tglKembaliAsli);
+            return `
+              <tr>
+                <td>${d.nama}</td>
+                <td>${d.idPeminjam}</td>
+                <td>${d.judul}</td>
+                <td>${formatTanggal(d.tglPinjam?.toDate?.() || d.tglPinjam)}</td>
+                <td>${formatTanggal(d.tglKembali?.toDate?.() || d.tglKembali)}</td>
+                <td>${d.tglKembaliAsli ? formatTanggal(d.tglKembaliAsli?.toDate?.() || d.tglKembaliAsli) : '-'}</td>
+                <td>${d.status || '-'}</td>
+                <td>Rp ${denda.toLocaleString("id-ID")}${hariTelat > 0 ? `<br><span class="denda-late">Terlambat ${hariTelat} hari</span>` : ''}</td>
+                <td>
+                  ${d.status === "dipinjam" ? `
+                    <button class="btn-admin btn-kembali" onclick="pengembalianBuku('${doc.id}','${d.bukuId}','${d.tglKembali}')">
+                      Konfirmasi<br>Kembali
+                    </button>
+                  ` : ''}
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    el.innerHTML = html;
+  } catch (error) {
+    console.error("Error loading borrow history:", error);
+    el.innerHTML = "<div class='text-danger'>Gagal memuat data peminjaman</div>";
+  }
 }
+
 // Fungsi admin konfirmasi pengembalian
 window.pengembalianBuku = async function(peminjamanId, bukuId, tglKembali) {
-  let tglSekarang = new Date();
-  // Update status ke dikembalikan dan simpan tglKembaliAsli
-  await db.collection("peminjaman").doc(peminjamanId).update({
-    status: "dikembalikan",
-    tglKembaliAsli: tglSekarang
-  });
-  // Update status buku jadi tersedia
-  await db.collection("buku").doc(bukuId).update({status: "tersedia"});
-  showAlert("alertAdmin","success","Buku berhasil dikembalikan & denda diperbarui.");
-  renderAdminPeminjaman();
-  fetchBuku();
+  if (!confirm("Konfirmasi pengembalian buku?")) return;
+  try {
+    const tglSekarang = new Date();
+    await db.collection("peminjaman").doc(peminjamanId).update({
+      status: "dikembalikan",
+      tglKembaliAsli: tglSekarang
+    });
+    await db.collection("buku").doc(bukuId).update({ status: "tersedia" });
+    showAlert("alertAdmin", "success", "Buku berhasil dikembalikan!");
+    renderAdminPeminjaman();
+    fetchBuku();
+  } catch (error) {
+    console.error("Error returning book:", error);
+    showAlert("alertAdmin", "danger", "Gagal mengkonfirmasi pengembalian");
+  }
 };
+
+// Inisialisasi saat DOM ready
+document.addEventListener("DOMContentLoaded", function() {
+  // Event listener untuk select buku
+  const select = document.getElementById('bukuDipinjam');
+  if (select) {
+    select.addEventListener('change', updateJudulBukuTerpilih);
+  }
+  // Set tanggal default untuk form peminjaman
+  const today = new Date();
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+  if(document.getElementById('tglPinjam')) document.getElementById('tglPinjam').valueAsDate = today;
+  if(document.getElementById('tglKembali')) document.getElementById('tglKembali').valueAsDate = nextWeek;
+  // Load data
+  fetchBuku();
+  renderRiwayat();
+  // Cek status login admin
+  auth.onAuthStateChanged(function(user) {
+    if (user && user.email === ADMIN_EMAIL) {
+      adminUser = user;
+      showAdminPanel();
+    }
+  });
+});
