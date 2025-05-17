@@ -28,7 +28,7 @@ function getKategoriBadgeClass(kat) {
 
 // LOGIN ADMIN OTOMATIS (email dan password sudah tetap)
 document.getElementById('btnLogin').onclick = async function() {
-    const email = "admin@admin.com";
+    const email = "ditsy.andrea@gmail.com";
     const pass = "123456";
     auth.signInWithEmailAndPassword(email, pass)
         .catch(err => showAlert('error', err.message));
