@@ -179,14 +179,15 @@ main .container {
   transition: background .15s;
 }
 .card-buku .btn-pinjam:disabled {
-  background: #e0e7ef !important;
-  color: #888 !important;
+  background: #f3f4f6 !important;
+  color: #a3a3a3 !important;
   cursor: not-allowed;
+  opacity: 0.8;
 }
 .card-buku .btn-pinjam:hover:not(:disabled) {
   background: linear-gradient(90deg, #3f37c9 60%, #1e1b4b 100%);
 }
-/* PENAMBAHAN: Tampilan status buku (tersedia/dipinjam) */
+/* Tampilan status buku (tersedia/dipinjam/tidak tersedia) */
 .status-buku {
   font-size: .97rem;
   font-weight: 600;
@@ -206,6 +207,11 @@ main .container {
   background: #fee2e2;
   color: #dc2626;
   border: 1px solid #dc262620;
+}
+.status-buku.tidak-tersedia {
+  background: #f3f4f6;
+  color: #888;
+  border: 1px solid #cbd5e1;
 }
 .form-pinjam-section {
   margin-top: 46px;
@@ -251,7 +257,6 @@ input[type="text"]:focus, input[type="date"]:focus, select:focus {
   border: 1.7px solid #3f37c9;
   box-shadow: 0 0 0 2px #3f37c922;
 }
-/* PENAMBAHAN: Judul buku terpilih di form pinjam */
 #judulBukuTerpilih,
 .judul-buku-terpilih {
   font-size: 1.07rem;
@@ -262,8 +267,7 @@ input[type="text"]:focus, input[type="date"]:focus, select:focus {
   min-height: 18px;
   transition: color .16s;
 }
-/* PENAMBAHAN: Disabled select buku di form pinjam */
-#bukuDipinjam:disabled {
+#bukuDipinjam:disabled, #multiBukuDipinjam select[multiple]:disabled {
   background: #f3f4f6;
   color: #aaa;
   cursor: not-allowed;
@@ -274,21 +278,25 @@ input[type="text"]:focus, input[type="date"]:focus, select:focus {
   text-align: center;
   font-size: 1.07rem;
 }
-/* PATCH: highlight pada select jika dipilih dari tombol pinjam */
+#alertPinjam .alert-warning, #multiBukuDipinjam .alert-warning {
+  background: #fef08a;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 7px;
+  font-weight: 600;
+}
 #bukuDipinjam.highlighted {
   border: 2px solid #22c55e;
   box-shadow: 0 0 0 3px #22c55e66;
   transition: border .23s, box-shadow .22s;
 }
-/* PATCH: pointer pada select jika enabled */
 #bukuDipinjam:not(:disabled) {
   cursor: pointer;
 }
-/* PATCH: transition warna pada select */
 #bukuDipinjam {
   transition: border .15s, box-shadow .15s;
 }
-/* ========== PATCH: MULTI SELECT BUKU DIPINJAM ========== */
+/* MULTI SELECT BUKU DIPINJAM */
 #multiBukuDipinjam label {
   font-size: 1.03rem;
   color: #3f37c9;
@@ -342,19 +350,6 @@ input[type="text"]:focus, input[type="date"]:focus, select:focus {
   padding: 7px 8px;
   font-size: .99rem;
 }
-#multiBukuDipinjam select[multiple]:disabled {
-  background: #f3f4f6;
-  color: #aaa;
-  cursor: not-allowed;
-  border: 1.5px dashed #cbd5e1;
-}
-@media (max-width: 780px) {
-  #multiBukuDipinjam select[multiple] {
-    min-height: 68px;
-    font-size: .97rem;
-  }
-}
-
 .riwayat-section {
   margin-top: 50px;
   margin-bottom: 40px;
@@ -546,7 +541,6 @@ footer {
   margin-top: 3px;
   font-size: .98rem;
 }
-/* PENAMBAHAN: Tabel admin daftar peminjaman jika ada */
 #adminDaftarPeminjaman {
   margin-top: 16px;
   background: #fafdff;
@@ -575,7 +569,6 @@ footer {
 #adminDaftarPeminjaman tbody tr:hover {
   background: #c7d2fe;
 }
-
 /* Tambahan untuk invoice/denda */
 .invoice-struk {
   border: 1.5px solid #e5e7eb;
@@ -616,8 +609,6 @@ footer {
   background: #16a34a;
   color: #fff;
 }
-
-/* PATCH: admin email show style */
 #adminEmailShow {
   font-size: 1rem;
   color: #a5b4fc;
@@ -625,7 +616,6 @@ footer {
   font-weight: 500;
   letter-spacing: 0.01em;
 }
-
 @media (max-width:900px) {
   .container { padding: 10px 2vw 10px 2vw; }
   .admin-section {padding:10px 3vw 14px 3vw;}
