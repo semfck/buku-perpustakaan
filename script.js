@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
   authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
   projectId: "buku-perpustakaan-d5800",
-  storageBucket: "buku-perpustakaan-d5800.appspot.com", // <- perbaikan di sini!
+  storageBucket: "buku-perpustakaan-d5800.appspot.com", // <- PERBAIKAN DI SINI!
   messagingSenderId: "272079716908",
   appId: "1:272079716908:web:f621036e0be69ef4ab4789",
   measurementId: "G-QR79PE11PS"
