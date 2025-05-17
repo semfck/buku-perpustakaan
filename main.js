@@ -190,6 +190,7 @@ async function fetchBuku() {
   }
   renderBukuGrid();
   renderBukuSelect();
+  window.semuaBuku = semuaBuku; // Agar semuaBuku global untuk script lain (misal index.html enhancement)
 }
 fetchBuku();
 
@@ -235,6 +236,9 @@ function renderBukuGrid() {
       }
       document.getElementById('bukuDipinjam').value = bukuId;
       document.getElementById('formPinjamSection').scrollIntoView({behavior:"smooth"});
+      // Trigger event agar judul buku terpilih muncul (untuk enhancement di index.html)
+      let event = new Event('change');
+      document.getElementById('bukuDipinjam').dispatchEvent(event);
     };
   });
 }
@@ -394,5 +398,3 @@ async function renderAdminPeminjaman() {
   html += "</tbody></table>";
   el.innerHTML = html;
 }
-
-window.semuaBuku = semuaBuku;
