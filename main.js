@@ -303,83 +303,9 @@ document.addEventListener("DOMContentLoaded", function() {
   if (!select) return;
   select.addEventListener('change', updateJudulBukuTerpilih);
   updateJudulBukuTerpilih();
+  fetchBuku(); // Pastikan fetch buku dipanggil saat halaman siap
+  renderRiwayat();
 });
-
-// RENDER KOLEKSI BUKU
-function renderBukuGrid() {
-  const daftarBuku = document.getElementById('daftarBuku');
-  let filter = filterKategori === "Semua"
-    ? semuaBuku
-    : semuaBuku.filter(b => b.kategori === filterKategori);
-  daftarBuku.innerHTML = "";
-  if (filter.length === 0) {
-    daftarBuku.innerHTML = "<div class='text-muted text-center py-4'>Belum ada buku pada kategori ini.</div>";
-    return;
-  }
-  filter.forEach(buku => {
-    let isDummy = buku.id.startsWith('dummy-');
-    let isDipinjam = buku.status === "dipinjam";
-    let btnDisabled = isDummy ? 'disabled title="Buku demo, hanya admin yang bisa menambah"' : (isDipinjam ? 'disabled title="Buku sedang dipinjam"' : '');
-    let statusHtml = isDummy ? '' : `<div class="status-buku ${isDipinjam ? 'dipinjam' : 'tersedia'}">${isDipinjam ? 'Dipinjam' : 'Tersedia'}</div>`;
-    daftarBuku.innerHTML += `
-      <div class="card-buku">
-        <div class="judul">${buku.judul}</div>
-        <div class="pengarang">Pengarang: ${buku.pengarang}</div>
-        <div class="kategori-badge">${buku.kategori}</div>
-        <div class="tahun">Tahun: ${buku.tahun}</div>
-        <div class="isbn">ISBN: ${buku.isbn}</div>
-        ${statusHtml}
-        <button class="btn-pinjam" data-id="${buku.id}" ${btnDisabled}>Pinjam</button>
-      </div>
-    `;
-  });
-  document.querySelectorAll('.btn-pinjam').forEach(btn => {
-    btn.onclick = function() {
-      const bukuId = this.dataset.id;
-      if (bukuId.startsWith('dummy-')) {
-        alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
-        return;
-      }
-      let buku = semuaBuku.find(b=>b.id===bukuId);
-      if (!buku || buku.status === "dipinjam") {
-        showAlert('alertPinjam','danger','Buku sedang dipinjam!');
-        return;
-      }
-      document.getElementById('bukuDipinjam').value = bukuId;
-      document.getElementById('formPinjamSection').scrollIntoView({behavior:"smooth"});
-      let event = new Event('change');
-      document.getElementById('bukuDipinjam').dispatchEvent(event);
-    };
-  });
-}
-document.querySelectorAll('.kategori-btn').forEach(btn => {
-  btn.onclick = function() {
-    document.querySelectorAll('.kategori-btn').forEach(b=>b.classList.remove('active'));
-    this.classList.add('active');
-    filterKategori = this.dataset.kategori;
-    renderBukuGrid();
-  };
-});
-function renderBukuSelect() {
-  const bukuDipinjam = document.getElementById('bukuDipinjam');
-  bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
-  let available = 0;
-  semuaBuku.forEach(b => {
-    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia")) {
-      bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul} (${b.isbn})</option>`;
-      available++;
-    }
-  });
-  bukuDipinjam.disabled = available === 0;
-  let alertEl = document.getElementById('alertPinjam');
-  if (available === 0 && alertEl) {
-    alertEl.innerHTML = '<div class="alert alert-warning">Tidak ada buku yang tersedia untuk dipinjam.</div>';
-  } else if (alertEl) {
-    alertEl.innerHTML = '';
-  }
-  let event = new Event('change');
-  bukuDipinjam.dispatchEvent(event);
-}
 
 // Peminjaman
 let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam")||"[]");
@@ -513,7 +439,6 @@ function formatTanggal(tgl) {
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('id-ID');
 }
-renderRiwayat();
 
 // Panel admin: daftar peminjaman
 async function renderAdminPeminjaman() {

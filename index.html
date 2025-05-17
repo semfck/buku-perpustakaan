@@ -21,7 +21,7 @@
       </div>
       <nav id="navMenu">
         <a href="#koleksi" class="nav-link">Koleksi Buku</a>
-        <a href="#formPinjam" class="nav-link">Pinjam Buku</a>
+        <a href="#formPinjamSection" class="nav-link">Pinjam Buku</a>
         <a href="#" class="nav-link" id="adminMenu" style="display:none;">Manajemen Buku</a>
         <a href="#" class="nav-link" id="logoutBtn" style="display:none;">Logout</a>
         <a href="#" class="nav-link" id="loginBtn" style="display:inline;">Admin Login</a>
@@ -193,7 +193,7 @@
     </div>
   </footer>
   <script src="main.js"></script>
-  <!-- ENHANCEMENT: Judul buku terpilih tampil otomatis -->
+  <!-- ENHANCEMENT: Judul buku terpilih tampil otomatis (tetap ada agar UX smooth walau JS utama error) -->
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const select = document.getElementById('bukuDipinjam');
