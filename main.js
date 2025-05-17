@@ -394,3 +394,5 @@ async function renderAdminPeminjaman() {
   html += "</tbody></table>";
   el.innerHTML = html;
 }
+
+window.semuaBuku = semuaBuku;
