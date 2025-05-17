@@ -53,12 +53,14 @@ function showAdminPanel() {
   adminSection.style.display = "";
   document.querySelector("main").scrollIntoView({behavior:"smooth"});
   renderAdminBuku();
+  renderAdminPeminjaman();
 }
 adminMenu.onclick = function(e){
   e.preventDefault();
   adminSection.style.display = "";
   document.querySelector("main").scrollIntoView({behavior:"smooth"});
   renderAdminBuku();
+  renderAdminPeminjaman();
 };
 auth.onAuthStateChanged(function(user){
   if(user && user.email === ADMIN_EMAIL){
@@ -81,6 +83,7 @@ async function renderAdminBuku() {
       <td>${buku.tahun}</td>
       <td>${buku.kategori}</td>
       <td>${buku.isbn}</td>
+      <td>${buku.status === "dipinjam" ? "<span style='color:red'>Dipinjam</span>" : "Tersedia"}</td>
       <td>
         <button class="btn-admin edit" onclick="editBukuAdmin('${buku.id}')">Edit</button>
         <button class="btn-admin" style="background:#f87171;color:#fff;" onclick="hapusBukuAdmin('${buku.id}')">Hapus</button>
@@ -98,9 +101,14 @@ formTambahBuku.onsubmit = async function(e){
     pengarang: document.getElementById("pengarangBuku").value,
     tahun: parseInt(document.getElementById("tahunBuku").value),
     kategori: document.getElementById("kategoriBuku").value,
-    isbn: document.getElementById("isbnBuku").value
+    isbn: document.getElementById("isbnBuku").value,
+    status: "tersedia"
   };
   if (idEdit) {
+    let bukuDoc = await db.collection("buku").doc(idEdit).get();
+    if (bukuDoc.exists && bukuDoc.data().status) {
+      data.status = bukuDoc.data().status;
+    }
     await db.collection("buku").doc(idEdit).set(data);
     showAlert("alertAdmin","success","Buku berhasil diupdate!");
   } else {
@@ -136,7 +144,12 @@ document.getElementById("btnBatalEdit").onclick = function(){
 window.hapusBukuAdmin = async function(id){
   if (!confirm("Yakin hapus buku ini?")) return;
   await db.collection("buku").doc(id).delete();
-  showAlert("alertAdmin","success","Buku berhasil dihapus!");
+  // Hapus juga semua peminjaman buku ini di koleksi "peminjaman"
+  let snapshot = await db.collection("peminjaman").where("bukuId","==",id).get();
+  let batch = db.batch();
+  snapshot.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  showAlert("alertAdmin","success","Buku & riwayat pinjamnya berhasil dihapus!");
   renderAdminBuku();
   fetchBuku();
 };
@@ -192,6 +205,10 @@ function renderBukuGrid() {
     return;
   }
   filter.forEach(buku => {
+    let isDummy = buku.id.startsWith('dummy-');
+    let isDipinjam = buku.status === "dipinjam";
+    let btnDisabled = isDummy ? 'disabled title="Buku demo, hanya admin yang bisa menambah"' : (isDipinjam ? 'disabled title="Buku sedang dipinjam"' : '');
+    let statusHtml = isDummy ? '' : `<div class="status-buku ${isDipinjam ? 'dipinjam' : 'tersedia'}">${isDipinjam ? 'Dipinjam' : 'Tersedia'}</div>`;
     daftarBuku.innerHTML += `
       <div class="card-buku">
         <div class="judul">${buku.judul}</div>
@@ -199,7 +216,8 @@ function renderBukuGrid() {
         <div class="kategori-badge">${buku.kategori}</div>
         <div class="tahun">Tahun: ${buku.tahun}</div>
         <div class="isbn">ISBN: ${buku.isbn}</div>
-        <button class="btn-pinjam" data-id="${buku.id}" ${buku.id.startsWith('dummy-')?'disabled title="Buku demo, hanya admin yang bisa menambah"':''}>Pinjam</button>
+        ${statusHtml}
+        <button class="btn-pinjam" data-id="${buku.id}" ${btnDisabled}>Pinjam</button>
       </div>
     `;
   });
@@ -208,6 +226,11 @@ function renderBukuGrid() {
       const bukuId = this.dataset.id;
       if (bukuId.startsWith('dummy-')) {
         alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
+        return;
+      }
+      let buku = semuaBuku.find(b=>b.id===bukuId);
+      if (!buku || buku.status === "dipinjam") {
+        showAlert('alertPinjam','danger','Buku sedang dipinjam!');
         return;
       }
       document.getElementById('bukuDipinjam').value = bukuId;
@@ -227,7 +250,7 @@ function renderBukuSelect() {
   const bukuDipinjam = document.getElementById('bukuDipinjam');
   bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
   semuaBuku.forEach(b => {
-    if (!b.id.startsWith('dummy-'))
+    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia"))
       bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul} (${b.isbn})</option>`;
   });
 }
@@ -243,12 +266,24 @@ document.getElementById('formPinjam').addEventListener('submit',async function(e
   if (!bukuId) return showAlert('alertPinjam','danger','Buku wajib dipilih!');
   let buku = semuaBuku.find(b=>b.id===bukuId);
   if (!buku) return showAlert('alertPinjam','danger','Buku tidak ditemukan!');
+  if (buku.status === "dipinjam") return showAlert('alertPinjam','danger','Buku sedang dipinjam!');
   let data = {nama,idPeminjam,bukuId,tglPinjam,judul:buku.judul,pengarang:buku.pengarang,kategori:buku.kategori,isbn:buku.isbn};
+  // Simpan ke Firestore koleksi "peminjaman"
+  await db.collection("peminjaman").add({
+    ...data,
+    tglPinjam: new Date(tglPinjam),
+    status: "dipinjam",
+    tglKembali: null
+  });
+  // Update status buku
+  await db.collection("buku").doc(bukuId).update({status: "dipinjam"});
+  // Simpan ke localStorage untuk riwayat lokal (opsional)
   pinjamList.push(data);
   localStorage.setItem("riwayatPinjam",JSON.stringify(pinjamList));
   renderRiwayat();
   showStrukPinjam(data);
   this.reset();
+  fetchBuku();
 });
 function showAlert(id,type,msg){
   let el = document.getElementById(id);
@@ -312,7 +347,39 @@ window.onclick = function(event){
 };
 function formatTanggal(tgl) {
   if (!tgl) return '';
+  if (typeof tgl === "object" && tgl.toDate) tgl = tgl.toDate();
   const d = new Date(tgl);
   return d.toLocaleDateString('id-ID');
 }
 renderRiwayat();
+
+// Panel admin: daftar peminjaman
+async function renderAdminPeminjaman() {
+  let el = document.getElementById("adminDaftarPeminjaman");
+  if (!el) return;
+  let snapshot = await db.collection("peminjaman").orderBy("tglPinjam","desc").get();
+  if (snapshot.empty) {
+    el.innerHTML = "<div class='text-muted'>Belum ada data peminjaman.</div>";
+    return;
+  }
+  let html = `<table class="riwayat-tabel"><thead>
+    <tr>
+      <th>Nama</th>
+      <th>ID</th>
+      <th>Buku</th>
+      <th>Tanggal Pinjam</th>
+      <th>Status</th>
+    </tr></thead><tbody>`;
+  snapshot.forEach(doc=>{
+    let d = doc.data();
+    html += `<tr>
+      <td>${d.nama}</td>
+      <td>${d.idPeminjam}</td>
+      <td>${d.judul}</td>
+      <td>${formatTanggal(d.tglPinjam && d.tglPinjam.toDate ? d.tglPinjam.toDate() : d.tglPinjam)}</td>
+      <td>${d.status}</td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  el.innerHTML = html;
+}
