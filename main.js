@@ -249,10 +249,20 @@ document.querySelectorAll('.kategori-btn').forEach(btn => {
 function renderBukuSelect() {
   const bukuDipinjam = document.getElementById('bukuDipinjam');
   bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
+  let available = 0;
   semuaBuku.forEach(b => {
-    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia"))
+    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia")) {
       bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul} (${b.isbn})</option>`;
+      available++;
+    }
   });
+  bukuDipinjam.disabled = available === 0;
+  let alertEl = document.getElementById('alertPinjam');
+  if (available === 0 && alertEl) {
+    alertEl.innerHTML = '<div class="alert alert-warning">Tidak ada buku yang tersedia untuk dipinjam.</div>';
+  } else if (alertEl) {
+    alertEl.innerHTML = '';
+  }
 }
 
 // Peminjaman
@@ -283,7 +293,8 @@ document.getElementById('formPinjam').addEventListener('submit',async function(e
   renderRiwayat();
   showStrukPinjam(data);
   this.reset();
-  fetchBuku();
+  await fetchBuku();
+  renderBukuSelect();
 });
 function showAlert(id,type,msg){
   let el = document.getElementById(id);
