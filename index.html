@@ -79,6 +79,10 @@
               <label for="tglPinjam">Tanggal Pinjam</label>
               <input type="date" id="tglPinjam" required>
             </div>
+            <div class="form-group">
+              <label for="tglKembali">Tanggal Kembali</label>
+              <input type="date" id="tglKembali" required>
+            </div>
           </div>
           <button type="submit" class="btn-primary btn-big">Pinjam Buku</button>
         </form>
@@ -174,7 +178,7 @@
       </div>
     </div>
 
-    <!-- MODAL STRUK -->
+    <!-- MODAL STRUK/INVOICE -->
     <div class="modal" id="modalStruk">
       <div class="modal-content">
         <span class="close" id="closeModal">&times;</span>
@@ -193,13 +197,11 @@
     document.addEventListener("DOMContentLoaded", function() {
       const select = document.getElementById('bukuDipinjam');
       const judulDiv = document.getElementById('judulBukuTerpilih');
-      // Helper untuk ambil judul berdasarkan id
       function getJudulById(id) {
         if(window.semuaBuku) {
           let b = window.semuaBuku.find(x=>x.id===id);
           if(b) return b.judul + (b.isbn ? " (ISBN: "+b.isbn+")" : "");
         }
-        // fallback: cari di option text
         let opt = select.querySelector('option[value="'+id+'"]');
         if(opt) return opt.textContent;
         return "";
@@ -207,7 +209,6 @@
       select.addEventListener('change', function() {
         judulDiv.textContent = this.value ? "Judul: "+getJudulById(this.value) : "";
       });
-      // Trigger awal kalau sudah ada value
       if(select.value) {
         judulDiv.textContent = "Judul: "+getJudulById(select.value);
       }

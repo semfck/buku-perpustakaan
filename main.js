@@ -144,7 +144,6 @@ document.getElementById("btnBatalEdit").onclick = function(){
 window.hapusBukuAdmin = async function(id){
   if (!confirm("Yakin hapus buku ini?")) return;
   await db.collection("buku").doc(id).delete();
-  // Hapus juga semua peminjaman buku ini di koleksi "peminjaman"
   let snapshot = await db.collection("peminjaman").where("bukuId","==",id).get();
   let batch = db.batch();
   snapshot.forEach(doc => batch.delete(doc.ref));
@@ -190,7 +189,7 @@ async function fetchBuku() {
   }
   renderBukuGrid();
   renderBukuSelect();
-  window.semuaBuku = semuaBuku; // Agar global, enhancement untuk judul buku terpilih
+  window.semuaBuku = semuaBuku;
 }
 fetchBuku();
 
@@ -236,7 +235,6 @@ function renderBukuGrid() {
       }
       document.getElementById('bukuDipinjam').value = bukuId;
       document.getElementById('formPinjamSection').scrollIntoView({behavior:"smooth"});
-      // Trigger event agar judul buku terpilih muncul (untuk enhancement di index.html)
       let event = new Event('change');
       document.getElementById('bukuDipinjam').dispatchEvent(event);
     };
@@ -267,7 +265,6 @@ function renderBukuSelect() {
   } else if (alertEl) {
     alertEl.innerHTML = '';
   }
-  // Trigger event agar judul buku terpilih update (untuk enhancement di index.html)
   let event = new Event('change');
   bukuDipinjam.dispatchEvent(event);
 }
@@ -280,21 +277,28 @@ document.getElementById('formPinjam').addEventListener('submit',async function(e
   let idPeminjam = document.getElementById('idPeminjam').value.trim();
   let bukuId = document.getElementById('bukuDipinjam').value;
   let tglPinjam = document.getElementById('tglPinjam').value;
+  let tglKembali = document.getElementById('tglKembali').value;
   if (!bukuId) return showAlert('alertPinjam','danger','Buku wajib dipilih!');
   let buku = semuaBuku.find(b=>b.id===bukuId);
   if (!buku) return showAlert('alertPinjam','danger','Buku tidak ditemukan!');
   if (buku.status === "dipinjam") return showAlert('alertPinjam','danger','Buku sedang dipinjam!');
-  let data = {nama,idPeminjam,bukuId,tglPinjam,judul:buku.judul,pengarang:buku.pengarang,kategori:buku.kategori,isbn:buku.isbn};
-  // Simpan ke Firestore koleksi "peminjaman"
+  let data = {
+    nama,idPeminjam,bukuId,
+    tglPinjam,
+    tglKembali,
+    judul:buku.judul,
+    pengarang:buku.pengarang,
+    kategori:buku.kategori,
+    isbn:buku.isbn
+  };
   await db.collection("peminjaman").add({
     ...data,
     tglPinjam: new Date(tglPinjam),
+    tglKembali: new Date(tglKembali),
     status: "dipinjam",
-    tglKembali: null
+    tglKembaliAsli: null
   });
-  // Update status buku
   await db.collection("buku").doc(bukuId).update({status: "dipinjam"});
-  // Simpan ke localStorage untuk riwayat lokal (opsional)
   pinjamList.push(data);
   localStorage.setItem("riwayatPinjam",JSON.stringify(pinjamList));
   renderRiwayat();
@@ -307,6 +311,15 @@ function showAlert(id,type,msg){
   let el = document.getElementById(id);
   el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
   setTimeout(()=>el.innerHTML="",2300);
+}
+
+// Enh: Hitung denda dan tampilkan invoice/struk
+function hitungDenda(tglKembali, tglKembaliAsli) {
+  if (!tglKembali || !tglKembaliAsli) return 0;
+  let tglTarget = new Date(tglKembali);
+  let tglAsli = new Date(tglKembaliAsli);
+  let hariTelat = Math.floor((tglAsli - tglTarget) / (1000*60*60*24));
+  return hariTelat > 0 ? hariTelat * 5000 : 0;
 }
 
 // Riwayat
@@ -323,7 +336,8 @@ function renderRiwayat() {
       <th>Judul Buku</th>
       <th>Kategori</th>
       <th>Tgl Pinjam</th>
-      <th>Struk</th>
+      <th>Tgl Kembali</th>
+      <th>Struk/Invoice</th>
     </tr></thead><tbody>`;
   pinjamList.forEach((p,i)=>{
     html += `<tr>
@@ -332,6 +346,7 @@ function renderRiwayat() {
       <td>${p.judul}</td>
       <td>${p.kategori}</td>
       <td>${formatTanggal(p.tglPinjam)}</td>
+      <td>${formatTanggal(p.tglKembali)}</td>
       <td><button class="btn-struk" onclick="showStrukPinjamByIndex(${i})">Lihat</button></td>
     </tr>`;
   });
@@ -342,16 +357,32 @@ window.showStrukPinjamByIndex = function(i){
   showStrukPinjam(pinjamList[i]);
 };
 function showStrukPinjam(data){
-  let isi = `<div style="font-size:1.09rem">
-    <b>Struk Peminjaman Buku</b><hr>
-    Nama: <b>${data.nama}</b><br>
-    ID: ${data.idPeminjam}<br>
-    Judul: ${data.judul}<br>
-    Kategori: ${data.kategori}<br>
-    Pengarang: ${data.pengarang}<br>
-    ISBN: ${data.isbn}<br>
-    Tanggal Pinjam: ${formatTanggal(data.tglPinjam)}<br>
-    <small>Harap kembalikan buku maksimal 7 hari!</small>
+  // Denda per hari Rp 5000 jika telat dari tglKembali
+  let tglKembaliAsli = data.tglKembaliAsli ? data.tglKembaliAsli : null;
+  let denda = 0;
+  let hariTelat = 0;
+  if (tglKembaliAsli) {
+    let tglTarget = new Date(data.tglKembali);
+    let tglAsli = new Date(tglKembaliAsli);
+    hariTelat = Math.floor((tglAsli - tglTarget)/(1000*60*60*24));
+    denda = hariTelat > 0 ? hariTelat*5000 : 0;
+  }
+  let isi = `<div class="invoice-struk">
+    <div style="font-size:1.09rem">
+      <b>Invoice Peminjaman Buku</b><hr>
+      Nama: <b>${data.nama}</b><br>
+      ID: ${data.idPeminjam}<br>
+      Judul: ${data.judul}<br>
+      Kategori: ${data.kategori}<br>
+      Pengarang: ${data.pengarang}<br>
+      ISBN: ${data.isbn}<br>
+      Tanggal Pinjam: ${formatTanggal(data.tglPinjam)}<br>
+      Tanggal Kembali (target): ${formatTanggal(data.tglKembali)}<br>
+      ${tglKembaliAsli ? `Tanggal Kembali Sebenarnya: ${formatTanggal(tglKembaliAsli)}<br>` : ''}
+      <hr>
+      <b>Denda Terlambat: Rp ${denda.toLocaleString("id-ID")}</b> ${hariTelat>0 ? `(Terlambat ${hariTelat} hari)` : '(Tidak ada denda)' }<br>
+      <small>Harap kembalikan buku tepat waktu. Denda Rp 5.000/hari jika lewat dari tanggal kembali.</small>
+    </div>
   </div>`;
   document.getElementById('isiStruk').innerHTML = isi;
   document.getElementById('modalStruk').classList.add('show');
@@ -367,6 +398,7 @@ function formatTanggal(tgl) {
   if (!tgl) return '';
   if (typeof tgl === "object" && tgl.toDate) tgl = tgl.toDate();
   const d = new Date(tgl);
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('id-ID');
 }
 renderRiwayat();
@@ -385,19 +417,50 @@ async function renderAdminPeminjaman() {
       <th>Nama</th>
       <th>ID</th>
       <th>Buku</th>
-      <th>Tanggal Pinjam</th>
+      <th>Tgl Pinjam</th>
+      <th>Tgl Kembali (target)</th>
+      <th>Tgl Kembali Real</th>
       <th>Status</th>
+      <th>Denda</th>
+      <th>Aksi</th>
     </tr></thead><tbody>`;
   snapshot.forEach(doc=>{
     let d = doc.data();
+    let hariTelat = 0, denda = 0;
+    if (d.tglKembaliAsli && d.tglKembali) {
+      let tglTarget = d.tglKembali.toDate ? d.tglKembali.toDate() : d.tglKembali;
+      let tglAsli = d.tglKembaliAsli.toDate ? d.tglKembaliAsli.toDate() : d.tglKembaliAsli;
+      hariTelat = Math.floor((new Date(tglAsli) - new Date(tglTarget))/(1000*60*60*24));
+      denda = hariTelat > 0 ? hariTelat*5000 : 0;
+    }
     html += `<tr>
       <td>${d.nama}</td>
       <td>${d.idPeminjam}</td>
       <td>${d.judul}</td>
       <td>${formatTanggal(d.tglPinjam && d.tglPinjam.toDate ? d.tglPinjam.toDate() : d.tglPinjam)}</td>
-      <td>${d.status}</td>
+      <td>${formatTanggal(d.tglKembali && d.tglKembali.toDate ? d.tglKembali.toDate() : d.tglKembali)}</td>
+      <td>${d.tglKembaliAsli ? formatTanggal(d.tglKembaliAsli && d.tglKembaliAsli.toDate ? d.tglKembaliAsli.toDate() : d.tglKembaliAsli) : '-'}</td>
+      <td>${d.status || '-'}</td>
+      <td>Rp ${denda.toLocaleString("id-ID")}${hariTelat>0 ? `<br><span class="denda-late">Terlambat ${hariTelat} hari</span>` : ''}</td>
+      <td>
+        ${d.status === "dipinjam" ? `<button class="btn-admin btn-kembali" onclick="pengembalianBuku('${doc.id}','${d.bukuId}','${d.tglKembali}')">Konfirmasi<br>Kembali</button>` : ''}
+      </td>
     </tr>`;
   });
   html += "</tbody></table>";
   el.innerHTML = html;
 }
+// Fungsi admin konfirmasi pengembalian
+window.pengembalianBuku = async function(peminjamanId, bukuId, tglKembali) {
+  let tglSekarang = new Date();
+  // Update status ke dikembalikan dan simpan tglKembaliAsli
+  await db.collection("peminjaman").doc(peminjamanId).update({
+    status: "dikembalikan",
+    tglKembaliAsli: tglSekarang
+  });
+  // Update status buku jadi tersedia
+  await db.collection("buku").doc(bukuId).update({status: "tersedia"});
+  showAlert("alertAdmin","success","Buku berhasil dikembalikan & denda diperbarui.");
+  renderAdminPeminjaman();
+  fetchBuku();
+};
