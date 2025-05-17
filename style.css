@@ -1,0 +1,113 @@
+/* ... kode CSS sebelumnya ... */
+
+.admin-section {
+  margin-top: 46px;
+  margin-bottom: 36px;
+  background: #f3f6fc;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px 0 rgba(86, 111, 255, 0.10);
+  padding: 34px 18px 30px 18px;
+}
+.admin-section h2 {
+  color: #3f37c9;
+  font-size: 1.3rem;
+  margin-bottom: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.admin-form {
+  margin-bottom: 18px;
+}
+.admin-form .form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 13px;
+}
+.admin-form .form-group {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+}
+.admin-form .form-group.align-end {
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.admin-buku-tabel table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fafdff;
+  border-radius: 13px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px 0 rgba(86, 111, 255, 0.10);
+  margin-top: 6px;
+}
+.admin-buku-tabel th, .admin-buku-tabel td {
+  padding: 12px 8px;
+  text-align: left;
+  border: none;
+}
+.admin-buku-tabel th {
+  background: linear-gradient(90deg, #3f37c9 80%, #4895ef 100%);
+  color: #fff;
+  font-weight: 600;
+}
+.admin-buku-tabel tbody tr {
+  background: #e0e7ff;
+  transition: background .13s;
+}
+.admin-buku-tabel tbody tr:hover {
+  background: #c7d2fe;
+}
+.admin-buku-tabel .btn-admin {
+  background: #fff;
+  color: #3f37c9;
+  border: 1.4px solid #3f37c9;
+  padding: 4px 11px;
+  font-size: .98rem;
+  border-radius: 7px;
+  font-weight: 500;
+  margin-right: 3px;
+  cursor: pointer;
+  transition: background .18s,color .13s;
+}
+.admin-buku-tabel .btn-admin.edit {
+  border-color: #4895ef;
+  color: #4895ef;
+}
+.admin-buku-tabel .btn-admin:hover {
+  background: #3f37c9;
+  color: #fff;
+}
+.admin-buku-tabel .btn-admin.edit:hover {
+  background: #4895ef;
+  color: #fff;
+}
+.btn-danger {
+  background: linear-gradient(90deg,#f43f5e 70%,#fb7185 100%);
+  border: none;
+  font-weight: 500;
+  color: #fff;
+  padding: 4px 18px;
+  border-radius: 7px;
+  transition: background .13s;
+}
+.btn-danger:hover {
+  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
+  color: #fff;
+}
+#alertAdmin {
+  margin-bottom: 7px;
+  margin-top: 3px;
+  font-size: .98rem;
+}
+@media (max-width:900px) {
+  .admin-section {padding:10px 3vw 14px 3vw;}
+  .admin-buku-tabel th, .admin-buku-tabel td { padding: 8px 4px;}
+}
+@media (max-width:600px) {
+  .admin-section {padding:7px 1vw 7px 1vw;}
+  .admin-form .form-row {flex-direction:column; gap:7px;}
+}
