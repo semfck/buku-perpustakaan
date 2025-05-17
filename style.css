@@ -551,3 +551,17 @@ footer {
   background: #16a34a;
   color: #fff;
 }
+
+#bukuDipinjam.highlighted {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 0 3px #22c55e66;
+  transition: border .23s, box-shadow .22s;
+}
+/* PATCH: pointer pada select jika enabled */
+#bukuDipinjam:not(:disabled) {
+  cursor: pointer;
+}
+/* PATCH: transition warna pada select */
+#bukuDipinjam {
+  transition: border .15s, box-shadow .15s;
+}

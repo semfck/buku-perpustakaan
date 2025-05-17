@@ -191,7 +191,119 @@ async function fetchBuku() {
   renderBukuSelect();
   window.semuaBuku = semuaBuku;
 }
-fetchBuku();
+
+// PATCH: Agar event dan select sync
+function updateJudulBukuTerpilih() {
+  const select = document.getElementById('bukuDipinjam');
+  const judulDiv = document.getElementById('judulBukuTerpilih');
+  if (!select || !judulDiv) return;
+  let val = select.value;
+  let label = '';
+  if (window.semuaBuku && val) {
+    let b = window.semuaBuku.find(x=>x.id === val);
+    if (b) label = b.judul + (b.isbn ? " (ISBN: "+b.isbn+")" : "");
+  }
+  if (!label && select.selectedOptions && select.selectedOptions.length)
+    label = select.selectedOptions[0].textContent;
+  judulDiv.textContent = val ? "Judul: " + label : "";
+}
+
+// PATCH: renderBukuGrid agar selalu trigger event change & visual select
+function renderBukuGrid() {
+  const daftarBuku = document.getElementById('daftarBuku');
+  let filter = filterKategori === "Semua"
+    ? semuaBuku
+    : semuaBuku.filter(b => b.kategori === filterKategori);
+  daftarBuku.innerHTML = "";
+  if (filter.length === 0) {
+    daftarBuku.innerHTML = "<div class='text-muted text-center py-4'>Belum ada buku pada kategori ini.</div>";
+    return;
+  }
+  filter.forEach(buku => {
+    let isDummy = buku.id.startsWith('dummy-');
+    let isDipinjam = buku.status === "dipinjam";
+    let btnDisabled = isDummy ? 'disabled title="Buku demo, hanya admin yang bisa menambah"' : (isDipinjam ? 'disabled title="Buku sedang dipinjam"' : '');
+    let statusHtml = isDummy ? '' : `<div class="status-buku ${isDipinjam ? 'dipinjam' : 'tersedia'}">${isDipinjam ? 'Dipinjam' : 'Tersedia'}</div>`;
+    daftarBuku.innerHTML += `
+      <div class="card-buku">
+        <div class="judul">${buku.judul}</div>
+        <div class="pengarang">Pengarang: ${buku.pengarang}</div>
+        <div class="kategori-badge">${buku.kategori}</div>
+        <div class="tahun">Tahun: ${buku.tahun}</div>
+        <div class="isbn">ISBN: ${buku.isbn}</div>
+        ${statusHtml}
+        <button class="btn-pinjam" data-id="${buku.id}" ${btnDisabled}>Pinjam</button>
+      </div>
+    `;
+  });
+  document.querySelectorAll('.btn-pinjam').forEach(btn => {
+    btn.onclick = function() {
+      const bukuId = this.dataset.id;
+      if (bukuId.startsWith('dummy-')) {
+        alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
+        return;
+      }
+      let buku = semuaBuku.find(b=>b.id===bukuId);
+      if (!buku || buku.status === "dipinjam") {
+        showAlert('alertPinjam','danger','Buku sedang dipinjam!');
+        return;
+      }
+      const select = document.getElementById('bukuDipinjam');
+      select.value = bukuId;
+      select.classList.add('highlighted');
+      let event = new Event('change', {bubbles:true});
+      select.dispatchEvent(event);
+      setTimeout(()=>select.classList.remove('highlighted'), 700);
+      updateJudulBukuTerpilih();
+      document.getElementById('formPinjamSection').scrollIntoView({behavior:"smooth"});
+    };
+  });
+}
+document.querySelectorAll('.kategori-btn').forEach(btn => {
+  btn.onclick = function() {
+    document.querySelectorAll('.kategori-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    filterKategori = this.dataset.kategori;
+    renderBukuGrid();
+  };
+});
+
+// PATCH: renderBukuSelect agar event change tetap dipicu dan judul update
+function renderBukuSelect() {
+  const bukuDipinjam = document.getElementById('bukuDipinjam');
+  let prevValue = bukuDipinjam.value; // simpan value sebelumnya
+  bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
+  let available = 0;
+  semuaBuku.forEach(b => {
+    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia")) {
+      bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul} (${b.isbn})</option>`;
+      available++;
+    }
+  });
+  bukuDipinjam.disabled = available === 0;
+  if (prevValue && bukuDipinjam.querySelector('option[value="'+prevValue+'"]')) {
+    bukuDipinjam.value = prevValue; // restore value jika masih ada
+  } else {
+    bukuDipinjam.value = "";
+  }
+  let alertEl = document.getElementById('alertPinjam');
+  if (available === 0 && alertEl) {
+    alertEl.innerHTML = '<div class="alert alert-warning">Tidak ada buku yang tersedia untuk dipinjam.</div>';
+  } else if (alertEl) {
+    alertEl.innerHTML = '';
+  }
+  let event = new Event('change', {bubbles:true});
+  bukuDipinjam.dispatchEvent(event);
+  updateJudulBukuTerpilih();
+}
+
+// PATCH: Saat DOM ready, event listener judul buku terpilih lebih andal
+document.addEventListener("DOMContentLoaded", function() {
+  const select = document.getElementById('bukuDipinjam');
+  if (!select) return;
+  select.addEventListener('change', updateJudulBukuTerpilih);
+  updateJudulBukuTerpilih();
+});
 
 // RENDER KOLEKSI BUKU
 function renderBukuGrid() {
