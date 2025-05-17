@@ -1,4 +1,16 @@
-// ... kode main.js sebelumnya (peminjaman, koleksi, dsb) ...
+// ================== KONFIGURASI FIREBASE ==================
+const firebaseConfig = {
+  apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
+  authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
+  projectId: "buku-perpustakaan-d5800",
+  storageBucket: "buku-perpustakaan-d5800.appspot.com",
+  messagingSenderId: "272079716908",
+  appId: "1:272079716908:web:f621036e0be69ef4ab4789",
+  measurementId: "G-QR79PE11PS"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
 // ========== ADMIN LOGIN & MANAGE ==========
 const ADMIN_EMAIL = "admin@domain.com";
@@ -9,20 +21,19 @@ const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const modalLogin = document.getElementById("modalLogin");
 const closeLoginModal = document.getElementById("closeLoginModal");
-
-// ===== ADMIN LOGIN =====
 let adminUser = null;
+
 loginBtn.onclick = function() {
   modalLogin.classList.add("show");
-}
+};
 closeLoginModal.onclick = function() {
   modalLogin.classList.remove("show");
-}
+};
 document.getElementById("formLoginAdmin").onsubmit = function(e){
   e.preventDefault();
   const email = document.getElementById("loginAdminEmail").value.trim();
   const password = document.getElementById("loginAdminPassword").value;
-  firebase.auth().signInWithEmailAndPassword(email, password)
+  auth.signInWithEmailAndPassword(email, password)
     .then(user => {
       adminUser = user.user;
       modalLogin.classList.remove("show");
@@ -31,18 +42,14 @@ document.getElementById("formLoginAdmin").onsubmit = function(e){
     })
     .catch(err => showAlert("alertLoginAdmin","danger",err.message));
 };
-
-// ===== ADMIN LOGOUT =====
 logoutBtn.onclick = function(){
-  firebase.auth().signOut().then(()=>window.location.reload());
+  auth.signOut().then(()=>window.location.reload());
 };
-
-// ====== SHOW/HIDE ADMIN PANEL ======
 function showAdminPanel() {
   adminMenu.style.display = "inline";
   logoutBtn.style.display = "inline";
   loginBtn.style.display = "none";
-  adminEmailShow.textContent = `(${firebase.auth().currentUser.email})`;
+  adminEmailShow.textContent = `(${auth.currentUser.email})`;
   adminSection.style.display = "";
   document.querySelector("main").scrollIntoView({behavior:"smooth"});
   renderAdminBuku();
@@ -53,6 +60,12 @@ adminMenu.onclick = function(e){
   document.querySelector("main").scrollIntoView({behavior:"smooth"});
   renderAdminBuku();
 };
+auth.onAuthStateChanged(function(user){
+  if(user && user.email === ADMIN_EMAIL){
+    adminUser = user;
+    showAdminPanel();
+  }
+});
 
 // ====== RENDER ADMIN TABEL BUKU ======
 async function renderAdminBuku() {
@@ -74,6 +87,7 @@ async function renderAdminBuku() {
       </td>
     </tr>`;
   });
+  fetchBuku(); // sinkron koleksi
 }
 
 // ====== TAMBAH/EDIT BUKU ======
@@ -89,11 +103,9 @@ formTambahBuku.onsubmit = async function(e){
     isbn: document.getElementById("isbnBuku").value
   };
   if (idEdit) {
-    // EDIT
     await db.collection("buku").doc(idEdit).set(data);
     showAlert("alertAdmin","success","Buku berhasil diupdate!");
   } else {
-    // TAMBAH
     await db.collection("buku").add(data);
     showAlert("alertAdmin","success","Buku berhasil ditambahkan!");
   }
@@ -104,7 +116,6 @@ formTambahBuku.onsubmit = async function(e){
   renderAdminBuku();
   fetchBuku(); // update koleksi
 };
-// Edit buku
 window.editBukuAdmin = async function(id){
   let doc = await db.collection("buku").doc(id).get();
   if (!doc.exists) return;
@@ -118,14 +129,12 @@ window.editBukuAdmin = async function(id){
   document.getElementById("btnSubmitBuku").textContent = "Update Buku";
   document.getElementById("btnBatalEdit").style.display = "";
 };
-// Batal edit
 document.getElementById("btnBatalEdit").onclick = function(){
   formTambahBuku.reset();
   document.getElementById("btnSubmitBuku").textContent = "Tambah Buku";
   document.getElementById("btnBatalEdit").style.display = "none";
   document.getElementById("bukuIdEdit").value = "";
 };
-// Hapus buku
 window.hapusBukuAdmin = async function(id){
   if (!confirm("Yakin hapus buku ini?")) return;
   await db.collection("buku").doc(id).delete();
@@ -134,12 +143,194 @@ window.hapusBukuAdmin = async function(id){
   fetchBuku();
 };
 
-// ====== AUTODETEKSI LOGIN ADMIN ======
-firebase.auth().onAuthStateChanged(function(user){
-  if(user && user.email === ADMIN_EMAIL){
-    adminUser = user;
-    showAdminPanel();
+// ================== DATA DUMMY ==================
+const DUMMY_BUKU = [
+  // Fiksi
+  {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
+  {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
+  {judul:"Supernova",pengarang:"Dewi Lestari",tahun:2001,kategori:"Fiksi",isbn:"9789799234426"},
+  {judul:"Perahu Kertas",pengarang:"Dewi Lestari",tahun:2009,kategori:"Fiksi",isbn:"9789791227228"},
+  // Non-Fiksi
+  {judul:"Sapiens",pengarang:"Yuval Noah Harari",tahun:2011,kategori:"Non-Fiksi",isbn:"9786024246942"},
+  {judul:"Atomic Habits",pengarang:"James Clear",tahun:2018,kategori:"Non-Fiksi",isbn:"9786020631049"},
+  {judul:"Berani Tidak Disukai",pengarang:"Ichiro Kishimi",tahun:2013,kategori:"Non-Fiksi",isbn:"9786023854315"},
+  {judul:"Filosofi Teras",pengarang:"Henry Manampiring",tahun:2018,kategori:"Non-Fiksi",isbn:"9786024810228"},
+  // Teknologi
+  {judul:"Clean Code",pengarang:"Robert C. Martin",tahun:2008,kategori:"Teknologi",isbn:"9780132350884"},
+  {judul:"The Pragmatic Programmer",pengarang:"Andrew Hunt",tahun:1999,kategori:"Teknologi",isbn:"9780135957059"},
+  {judul:"Introduction to Algorithms",pengarang:"Thomas H. Cormen",tahun:2009,kategori:"Teknologi",isbn:"9780262033848"},
+  {judul:"Python Crash Course",pengarang:"Eric Matthes",tahun:2016,kategori:"Teknologi",isbn:"9781593276034"},
+  // Sejarah
+  {judul:"Sejarah Dunia yang Disembunyikan",pengarang:"Jonathan Black",tahun:2018,kategori:"Sejarah",isbn:"9786023855183"},
+  {judul:"A History of Modern Indonesia",pengarang:"Adrian Vickers",tahun:2005,kategori:"Sejarah",isbn:"9780521833992"},
+  {judul:"Indonesia Etc.",pengarang:"Elizabeth Pisani",tahun:2014,kategori:"Sejarah",isbn:"9780393079974"},
+  {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"}
+];
+
+// ================== KOLEKSI BUKU ==================
+let semuaBuku = [];
+const KATEGORI_LIST = ["Fiksi","Non-Fiksi","Teknologi","Sejarah"];
+let filterKategori = "Semua";
+
+// -- Fetch Buku untuk halaman utama dan select pinjam
+async function fetchBuku() {
+  let snapshot = await db.collection("buku").get();
+  semuaBuku = [];
+  snapshot.forEach(doc => semuaBuku.push({ id: doc.id, ...doc.data() }));
+  // Tambah dummy jika kurang dari 16
+  if (semuaBuku.length < 16) {
+    DUMMY_BUKU.forEach(d => {
+      if (!semuaBuku.some(b => b.judul === d.judul && b.kategori === d.kategori)) {
+        semuaBuku.push({ ...d, id: 'dummy-'+d.judul.replace(/\s/g,'') });
+      }
+    });
   }
+  renderBukuGrid();
+  renderBukuSelect();
+}
+fetchBuku();
+
+// ================== RENDER KOLEKSI BUKU ==================
+function renderBukuGrid() {
+  const daftarBuku = document.getElementById('daftarBuku');
+  let filter = filterKategori === "Semua"
+    ? semuaBuku
+    : semuaBuku.filter(b => b.kategori === filterKategori);
+  daftarBuku.innerHTML = "";
+  if (filter.length === 0) {
+    daftarBuku.innerHTML = "<div class='text-muted text-center py-4'>Belum ada buku pada kategori ini.</div>";
+    return;
+  }
+  filter.forEach(buku => {
+    daftarBuku.innerHTML += `
+      <div class="card-buku">
+        <div class="judul">${buku.judul}</div>
+        <div class="pengarang">Pengarang: ${buku.pengarang}</div>
+        <div class="kategori-badge">${buku.kategori}</div>
+        <div class="tahun">Tahun: ${buku.tahun}</div>
+        <div class="isbn">ISBN: ${buku.isbn}</div>
+        <button class="btn-pinjam" data-id="${buku.id}" ${buku.id.startsWith('dummy-')?'disabled title="Buku demo, hanya admin yang bisa menambah"':''}>Pinjam</button>
+      </div>
+    `;
+  });
+  document.querySelectorAll('.btn-pinjam').forEach(btn => {
+    btn.onclick = function() {
+      const bukuId = this.dataset.id;
+      if (bukuId.startsWith('dummy-')) {
+        alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
+        return;
+      }
+      document.getElementById('bukuDipinjam').value = bukuId;
+      document.getElementById('formPinjamSection').scrollIntoView({behavior:"smooth"});
+    };
+  });
+}
+
+// ================== FILTER KATEGORI ==================
+document.querySelectorAll('.kategori-btn').forEach(btn => {
+  btn.onclick = function() {
+    document.querySelectorAll('.kategori-btn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    filterKategori = this.dataset.kategori;
+    renderBukuGrid();
+  };
 });
 
-// ... kode main.js selanjutnya (koleksi, pinjam, riwayat, dsb) ...
+// ================== FORM PINJAM ==================
+function renderBukuSelect() {
+  const bukuDipinjam = document.getElementById('bukuDipinjam');
+  bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
+  semuaBuku.forEach(b => {
+    if (!b.id.startsWith('dummy-'))
+      bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul} (${b.isbn})</option>`;
+  });
+}
+
+// Data peminjaman (RAM/localStorage)
+let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam")||"[]");
+
+document.getElementById('formPinjam').addEventListener('submit',async function(e){
+  e.preventDefault();
+  let nama = document.getElementById('namaPeminjam').value.trim();
+  let idPeminjam = document.getElementById('idPeminjam').value.trim();
+  let bukuId = document.getElementById('bukuDipinjam').value;
+  let tglPinjam = document.getElementById('tglPinjam').value;
+  if (!bukuId) return showAlert('alertPinjam','danger','Buku wajib dipilih!');
+  let buku = semuaBuku.find(b=>b.id===bukuId);
+  if (!buku) return showAlert('alertPinjam','danger','Buku tidak ditemukan!');
+  let data = {nama,idPeminjam,bukuId,tglPinjam,judul:buku.judul,pengarang:buku.pengarang,kategori:buku.kategori,isbn:buku.isbn};
+  pinjamList.push(data);
+  localStorage.setItem("riwayatPinjam",JSON.stringify(pinjamList));
+  renderRiwayat();
+  showStrukPinjam(data);
+  this.reset();
+});
+
+function showAlert(id,type,msg){
+  let el = document.getElementById(id);
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(()=>el.innerHTML="",2300);
+}
+
+// ================== RIWAYAT ==================
+function renderRiwayat() {
+  const el = document.getElementById('riwayatTabel');
+  if(pinjamList.length===0) {
+    el.innerHTML = "<div class='text-muted text-center p-2'>Belum ada data peminjaman.</div>";
+    return;
+  }
+  let html = `<table class="riwayat-tabel"><thead>
+    <tr>
+      <th>Nama</th>
+      <th>ID</th>
+      <th>Judul Buku</th>
+      <th>Kategori</th>
+      <th>Tgl Pinjam</th>
+      <th>Struk</th>
+    </tr></thead><tbody>`;
+  pinjamList.forEach((p,i)=>{
+    html += `<tr>
+      <td>${p.nama}</td>
+      <td>${p.idPeminjam}</td>
+      <td>${p.judul}</td>
+      <td>${p.kategori}</td>
+      <td>${formatTanggal(p.tglPinjam)}</td>
+      <td><button class="btn-struk" onclick="showStrukPinjamByIndex(${i})">Lihat</button></td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  el.innerHTML = html;
+}
+window.showStrukPinjamByIndex = function(i){
+  showStrukPinjam(pinjamList[i]);
+};
+function showStrukPinjam(data){
+  let isi = `<div style="font-size:1.09rem">
+    <b>Struk Peminjaman Buku</b><hr>
+    Nama: <b>${data.nama}</b><br>
+    ID: ${data.idPeminjam}<br>
+    Judul: ${data.judul}<br>
+    Kategori: ${data.kategori}<br>
+    Pengarang: ${data.pengarang}<br>
+    ISBN: ${data.isbn}<br>
+    Tanggal Pinjam: ${formatTanggal(data.tglPinjam)}<br>
+    <small>Harap kembalikan buku maksimal 7 hari!</small>
+  </div>`;
+  document.getElementById('isiStruk').innerHTML = isi;
+  document.getElementById('modalStruk').classList.add('show');
+}
+
+document.getElementById('closeModal').onclick = () => {
+  document.getElementById('modalStruk').classList.remove('show');
+};
+window.onclick = function(event){
+  if(event.target === document.getElementById('modalStruk'))
+    document.getElementById('modalStruk').classList.remove('show');
+};
+
+function formatTanggal(tgl) {
+  if (!tgl) return '';
+  const d = new Date(tgl);
+  return d.toLocaleDateString('id-ID');
+}
+renderRiwayat();
