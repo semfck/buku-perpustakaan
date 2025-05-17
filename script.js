@@ -28,7 +28,7 @@ function getKategoriBadgeClass(kat) {
 
 // LOGIN ADMIN OTOMATIS (email dan password sudah tetap)
 document.getElementById('btnLogin').onclick = async function() {
-    const email = "ditsy.andrea@gmail.com";
+    const email = "admin@admin.com";
     const pass = "123456";
     auth.signInWithEmailAndPassword(email, pass)
         .catch(err => showAlert('error', err.message));
@@ -214,17 +214,21 @@ document.getElementById('formTambahBuku').addEventListener('submit', function(e)
     }
 });
 
-// ... fungsi loadActiveLoans, loadLoanHistory, showReturnModal, event listeners, dll (sama seperti versi sebelumnya, tidak diubah) ...
+// --- Fitur Peminjaman, Pengembalian, dan Riwayat (ringkas, tambahkan sesuai kebutuhan) ---
 
+// Catatan: Anda bisa menambahkan event handler dan fungsi untuk fitur peminjaman, pengembalian, dan riwayat di sini.
+// Misal: loadActiveLoans(), loadLoanHistory(), showReturnModal(), dsb.
+
+// --- Contoh pemanggilan fungsi pada DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(async function() {
         document.getElementById('loadingOverlay').style.display = 'none';
         await autoSeedBooks();
         loadBooks();
-        loadActiveLoans();
-        loadLoanHistory();
+        // loadActiveLoans();
+        // loadLoanHistory();
         analytics.logEvent('page_view');
     }, 1000);
 
-    // ... event listeners lain tetap ...
+    // Tambahkan event listeners lain jika perlu
 });
