@@ -188,9 +188,9 @@ async function fetchBuku() {
         }
       });
     }
+    window.semuaBuku = semuaBuku;
     renderBukuGrid();
     renderBukuSelect();
-    window.semuaBuku = semuaBuku;
   } catch (error) {
     console.error("Error fetching books:", error);
     showAlert('alertPinjam', 'danger', 'Gagal memuat daftar buku');
@@ -301,7 +301,8 @@ function renderBukuSelect() {
   bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
   let availableBooks = 0;
   semuaBuku.forEach(b => {
-    if (!b.id.startsWith('dummy-') && b.status === "tersedia") {
+    // Fallback: jika status tidak ada, dianggap tersedia
+    if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia")) {
       bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul}${b.isbn ? ` (${b.isbn})` : ''}</option>`;
       availableBooks++;
     }
