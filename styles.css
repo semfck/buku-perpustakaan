@@ -1,232 +1,167 @@
 body {
-  background: linear-gradient(120deg, #e6e9f0 0%, #eef1f5 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   min-height: 100vh;
-  font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.01em;
 }
 
-.navbar {
-  background: #fffbe7 !important;
-  border: none;
-  border-radius: 1rem;
-  box-shadow: 0 2px 10px 0 rgba(40, 40, 40, 0.08);
-}
-.navbar .navbar-brand i {
-  color: #a9833a;
-  font-size: 1.6rem;
-}
-.navbar .navbar-nav .nav-link {
-  font-weight: 500;
-  color: #784421 !important;
-  margin-right: 5px;
-  transition: color 0.2s;
-}
-.navbar .navbar-nav .nav-link.active {
-  color: #e4b96d !important;
-  font-weight: bold;
-}
-.navbar .btn {
-  min-width: 95px;
+.container {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px 0 rgba(56, 65, 87, 0.07);
+  margin-top: 40px;
+  margin-bottom: 40px;
+  padding: 32px 32px 24px 32px;
+  min-width: 320px;
+  max-width: 950px;
 }
 
-.card {
-  border-radius: 1rem;
-  box-shadow: 0 2px 16px 0 rgba(160, 140, 110, 0.07);
-  border: none;
-}
-.card-header {
-  background: linear-gradient(90deg, #ffe9c6 0%, #fffbe7 100%);
-  border-radius: 1rem 1rem 0 0 !important;
-  font-weight: bold;
-  color: #784421;
-  border-bottom: 1px solid #f5ecd7;
-  letter-spacing: 0.5px;
-  font-size: 1.09rem;
-}
-.card-body {
-  background: rgba(255,255,255,0.97);
-  border-radius: 0 0 1rem 1rem;
+h2 {
+  font-weight: 700;
+  color: #24292f;
+  letter-spacing: 0.03em;
+  margin-bottom: 28px;
 }
 
-.btn-primary, .btn-primary:focus, .btn-primary:active {
-  background: linear-gradient(90deg, #a9833a 0%, #e4b96d 100%);
-  border: none;
-  color: #fff;
-  box-shadow: 0 2px 8px 0 rgba(168, 131, 58, 0.08);
-  transition: background 0.2s;
-}
-.btn-primary:hover {
-  background: linear-gradient(90deg, #e4b96d 0%, #a9833a 100%);
-  color: #fff;
-}
-.btn-success, .btn-success:focus, .btn-success:active {
-  background: linear-gradient(90deg, #3aa85d 0%, #70e4a2 100%);
-  border: none;
-  color: #fff;
-  box-shadow: 0 2px 8px 0 rgba(58, 168, 93, 0.09);
-}
-.btn-success:hover {
-  background: linear-gradient(90deg, #70e4a2 0%, #3aa85d 100%);
-}
-.btn-danger, .btn-danger:focus, .btn-danger:active {
-  background: linear-gradient(90deg, #d34a39 0%, #fa9a8b 100%);
-  border: none;
-  color: #fff;
-  box-shadow: 0 2px 8px 0 rgba(211, 74, 57, 0.08);
-}
-.btn-danger:hover {
-  background: linear-gradient(90deg, #fa9a8b 0%, #d34a39 100%);
-}
-.btn-warning, .btn-warning:focus, .btn-warning:active {
-  background: linear-gradient(90deg, #e7c04b 0%, #ffe488 100%);
-  border: none;
-  color: #7c5a00;
-  box-shadow: 0 2px 8px 0 rgba(231, 192, 75, 0.09);
-}
-.btn-warning:hover {
-  background: linear-gradient(90deg, #ffe488 0%, #e7c04b 100%);
-  color: #7c5a00;
+/* === Login Card === */
+#authSection {
+  background: #f7fafc;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px 0 rgba(140,152,164,.11);
+  padding: 32px 24px 24px 24px;
+  margin-bottom: 30px;
+  max-width: 430px;
 }
 
-.badge.bg-category-fiksi {
-  background: linear-gradient(90deg, #ffd1dc 0%, #ffe4fa 100%);
-  color: #a63c6b;
+#loginForm input {
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  transition: border .2s;
+}
+
+#loginForm input:focus {
+  border: 1.5px solid #2563eb;
+  box-shadow: 0 0 0 2px #2563eb22;
+  outline: none;
+}
+
+#loginForm button {
   font-weight: 600;
-  font-size: 0.98em;
-}
-.badge.bg-category-nonfiksi {
-  background: linear-gradient(90deg, #d6f5e3 0%, #f0fff3 100%);
-  color: #18714b;
-  font-weight: 600;
-  font-size: 0.98em;
-}
-.badge.bg-category-teknologi {
-  background: linear-gradient(90deg, #d8eafd 0%, #f0f6ff 100%);
-  color: #185794;
-  font-weight: 600;
-  font-size: 0.98em;
-}
-.badge.bg-category-sejarah {
-  background: linear-gradient(90deg, #f9e8d2 0%, #fff7ec 100%);
-  color: #8c5d14;
-  font-weight: 600;
-  font-size: 0.98em;
+  transition: background .15s;
 }
 
-.table thead th {
-  background: #f8ecd4 !important;
-  color: #a9833a;
-  border: none;
-  font-size: 1rem;
-  font-weight: 600;
-}
-.table-striped > tbody > tr:nth-of-type(odd) {
-  background-color: #fffbe7;
-}
-.table-hover tbody tr:hover {
-  background: #ffe9c6;
-}
-.table td, .table th {
-  vertical-align: middle;
-}
-
-input[readonly], textarea[readonly] {
-  background: #f8f3e8 !important;
-  color: #a9833a !important;
-  cursor: not-allowed;
-}
-input[type="date"]:invalid {
-  color: #bdbdbd;
-}
-input:invalid, select:invalid, textarea:invalid {
-  border-color: #d34a39 !important;
-  box-shadow: 0 0 0 1.5px #d34a3933;
-}
-.invalid-feedback {
-  color: #d34a39 !important;
-  font-size: 0.95em;
-}
-
-#alertContainer .alert {
-  min-width: 250px;
-  border-radius: .75rem;
-  font-size: 0.95rem;
-  box-shadow: 0 2px 12px 0 rgba(168, 131, 58, 0.08);
-  margin: 0 auto;
-  max-width: 480px;
-}
-#loadingOverlay {
-  background: rgba(255, 255, 230, 0.92);
-  z-index: 3000;
+#userInfo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position:fixed;
-  top:0;left:0;width:100vw;height:100vh;
+  gap: 10px;
+  margin-bottom: 10px;
 }
-.spinner-border {
-  color: #a9833a;
-  width: 3rem;
-  height: 3rem;
+
+#userEmail {
+  font-size: 1rem;
+  color: #2563eb;
+  font-weight: 600;
 }
-.form-label {
-  color: #8c6a2c;
-  font-weight: 500;
-  letter-spacing: .2px;
+
+#logoutBtn {
+  font-size: .98rem;
+  padding: 4px 18px;
 }
-.form-control:focus, .form-select:focus {
-  border-color: #e4b96d;
-  box-shadow: 0 0 8px 0 #ffe9c6;
+
+/* ===== Admin Section ===== */
+#adminSection form {
+  background: #f0f4f8;
+  border-radius: 12px;
+  padding: 18px 18px 10px 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px 0 rgba(140,152,164,.08);
 }
-#charCount {
-  font-weight: bold;
-  color: #a9833a;
+
+#formTambahBuku input, #formTambahBuku select {
+  border-radius: 7px;
+  background: #f9fafb;
+  border: 1.3px solid #e0e6ed;
+  font-size: 1rem;
+  transition: border .18s;
 }
-.modal-content {
-  border-radius: 1rem;
-  box-shadow: 0 4px 32px 0 rgba(168, 131, 58, 0.08);
+
+#formTambahBuku input:focus, #formTambahBuku select:focus {
+  border: 1.5px solid #2563eb;
+  box-shadow: 0 0 0 2px #2563eb22;
+  outline: none;
 }
-.modal-header {
-  background: linear-gradient(90deg, #ffe9c6 0%, #fffbe7 100%);
-  border-radius: 1rem 1rem 0 0;
-  color: #784421;
-  border-bottom: 1px solid #f5ecd7;
+
+#formTambahBuku button {
+  font-weight: 600;
+  background: linear-gradient(90deg, #2563eb 60%, #5ea3f8 100%);
+  border: none;
 }
-.modal-footer {
-  border-top: none;
+
+#formTambahBuku button:hover {
+  background: linear-gradient(90deg, #1e40af 60%, #2563eb 100%);
 }
-#adminStatus {
-  font-size: 1em;
-  padding: 7px 15px;
-  letter-spacing: 1px;
-}
-@media (max-width: 992px) {
-  .navbar .btn {
-    min-width: unset;
-    margin-bottom: 6px;
-  }
-}
-@media (max-width: 768px) {
-  .navbar {
-    border-radius: 0;
-  }
-  .card {
-    border-radius: .7rem;
-  }
-  .card-header, .card-body {
-    border-radius: .7rem;
-  }
-  .modal-content {
-    border-radius: .7rem;
-  }
-  .navbar .navbar-brand i {
-    font-size: 1.2rem;
-  }
-}
-::-webkit-scrollbar {
-  width: 8px;
-  background: #fffbe7;
-}
-::-webkit-scrollbar-thumb {
-  background: #e4b96d;
+
+.alert {
   border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 18px;
+  border: none;
+  box-shadow: 0 2px 10px 0 rgba(30,64,175,0.07);
+}
+
+.table {
+  background: #fbfcfd;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 8px 0 rgba(30,64,175,0.06);
+  margin-top: 10px;
+}
+
+.table thead tr {
+  background: linear-gradient(90deg, #2563eb 80%, #5ea3f8 100%);
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.table th, .table td {
+  vertical-align: middle !important;
+  padding: 14px 10px !important;
+}
+
+.table tbody tr {
+  transition: background .18s;
+}
+
+.table tbody tr:hover {
+  background: #e7f0fd;
+}
+
+.table .btn-danger {
+  font-size: .93rem;
+  padding: 3px 18px;
+  border-radius: 7px;
+  background: linear-gradient(90deg,#f43f5e 60%,#fb7185 100%);
+  border: none;
+  font-weight: 500;
+  transition: background .16s, color .16s;
+}
+
+.table .btn-danger:hover {
+  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .container { padding: 20px 4vw 16px 4vw; }
+  #adminSection form, #authSection { padding: 16px 10px 10px 10px;}
+  .table th, .table td { padding: 10px 5px !important; }
+  h2 { font-size: 1.38rem;}
+}
+
+@media (max-width: 600px) {
+  .container { padding: 9px 0 5px 0;}
+  #adminSection form, #authSection { padding: 8px 2px 5px 2px;}
+  h2 { font-size: 1.1rem;}
 }
