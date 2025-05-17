@@ -190,7 +190,7 @@ async function fetchBuku() {
   }
   renderBukuGrid();
   renderBukuSelect();
-  window.semuaBuku = semuaBuku; // Agar semuaBuku global untuk script lain (misal index.html enhancement)
+  window.semuaBuku = semuaBuku; // Agar global, enhancement untuk judul buku terpilih
 }
 fetchBuku();
 
@@ -267,6 +267,9 @@ function renderBukuSelect() {
   } else if (alertEl) {
     alertEl.innerHTML = '';
   }
+  // Trigger event agar judul buku terpilih update (untuk enhancement di index.html)
+  let event = new Event('change');
+  bukuDipinjam.dispatchEvent(event);
 }
 
 // Peminjaman

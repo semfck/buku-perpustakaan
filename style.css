@@ -252,7 +252,8 @@ input[type="text"]:focus, input[type="date"]:focus, select:focus {
   box-shadow: 0 0 0 2px #3f37c922;
 }
 /* PENAMBAHAN: Judul buku terpilih di form pinjam */
-#judulBukuTerpilih {
+#judulBukuTerpilih,
+.judul-buku-terpilih {
   font-size: 1.07rem;
   font-weight: 500;
   color: #444;
