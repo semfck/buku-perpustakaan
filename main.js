@@ -1,4 +1,4 @@
-// ================== KONFIGURASI FIREBASE ==================
+// Firebase config dan inisialisasi
 const firebaseConfig = {
   apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
   authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// ========== ADMIN LOGIN & MANAGE ==========
+// Admin login
 const ADMIN_EMAIL = "admin@domain.com";
 const adminMenu = document.getElementById("adminMenu");
 const adminSection = document.getElementById("adminSection");
@@ -67,7 +67,7 @@ auth.onAuthStateChanged(function(user){
   }
 });
 
-// ====== RENDER ADMIN TABEL BUKU ======
+// Admin buku
 async function renderAdminBuku() {
   let snapshot = await db.collection("buku").get();
   let bukuList = [];
@@ -87,10 +87,8 @@ async function renderAdminBuku() {
       </td>
     </tr>`;
   });
-  fetchBuku(); // sinkron koleksi
+  fetchBuku();
 }
-
-// ====== TAMBAH/EDIT BUKU ======
 const formTambahBuku = document.getElementById("formTambahBuku");
 formTambahBuku.onsubmit = async function(e){
   e.preventDefault();
@@ -114,7 +112,7 @@ formTambahBuku.onsubmit = async function(e){
   document.getElementById("btnBatalEdit").style.display = "none";
   document.getElementById("bukuIdEdit").value = "";
   renderAdminBuku();
-  fetchBuku(); // update koleksi
+  fetchBuku();
 };
 window.editBukuAdmin = async function(id){
   let doc = await db.collection("buku").doc(id).get();
@@ -143,41 +141,33 @@ window.hapusBukuAdmin = async function(id){
   fetchBuku();
 };
 
-// ================== DATA DUMMY ==================
+// Data dummy
 const DUMMY_BUKU = [
-  // Fiksi
   {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
   {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
   {judul:"Supernova",pengarang:"Dewi Lestari",tahun:2001,kategori:"Fiksi",isbn:"9789799234426"},
   {judul:"Perahu Kertas",pengarang:"Dewi Lestari",tahun:2009,kategori:"Fiksi",isbn:"9789791227228"},
-  // Non-Fiksi
   {judul:"Sapiens",pengarang:"Yuval Noah Harari",tahun:2011,kategori:"Non-Fiksi",isbn:"9786024246942"},
   {judul:"Atomic Habits",pengarang:"James Clear",tahun:2018,kategori:"Non-Fiksi",isbn:"9786020631049"},
   {judul:"Berani Tidak Disukai",pengarang:"Ichiro Kishimi",tahun:2013,kategori:"Non-Fiksi",isbn:"9786023854315"},
   {judul:"Filosofi Teras",pengarang:"Henry Manampiring",tahun:2018,kategori:"Non-Fiksi",isbn:"9786024810228"},
-  // Teknologi
   {judul:"Clean Code",pengarang:"Robert C. Martin",tahun:2008,kategori:"Teknologi",isbn:"9780132350884"},
   {judul:"The Pragmatic Programmer",pengarang:"Andrew Hunt",tahun:1999,kategori:"Teknologi",isbn:"9780135957059"},
   {judul:"Introduction to Algorithms",pengarang:"Thomas H. Cormen",tahun:2009,kategori:"Teknologi",isbn:"9780262033848"},
   {judul:"Python Crash Course",pengarang:"Eric Matthes",tahun:2016,kategori:"Teknologi",isbn:"9781593276034"},
-  // Sejarah
   {judul:"Sejarah Dunia yang Disembunyikan",pengarang:"Jonathan Black",tahun:2018,kategori:"Sejarah",isbn:"9786023855183"},
   {judul:"A History of Modern Indonesia",pengarang:"Adrian Vickers",tahun:2005,kategori:"Sejarah",isbn:"9780521833992"},
   {judul:"Indonesia Etc.",pengarang:"Elizabeth Pisani",tahun:2014,kategori:"Sejarah",isbn:"9780393079974"},
   {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"}
 ];
 
-// ================== KOLEKSI BUKU ==================
+// Koleksi Buku
 let semuaBuku = [];
-const KATEGORI_LIST = ["Fiksi","Non-Fiksi","Teknologi","Sejarah"];
 let filterKategori = "Semua";
-
-// -- Fetch Buku untuk halaman utama dan select pinjam
 async function fetchBuku() {
   let snapshot = await db.collection("buku").get();
   semuaBuku = [];
   snapshot.forEach(doc => semuaBuku.push({ id: doc.id, ...doc.data() }));
-  // Tambah dummy jika kurang dari 16
   if (semuaBuku.length < 16) {
     DUMMY_BUKU.forEach(d => {
       if (!semuaBuku.some(b => b.judul === d.judul && b.kategori === d.kategori)) {
@@ -190,7 +180,7 @@ async function fetchBuku() {
 }
 fetchBuku();
 
-// ================== RENDER KOLEKSI BUKU ==================
+// RENDER KOLEKSI BUKU
 function renderBukuGrid() {
   const daftarBuku = document.getElementById('daftarBuku');
   let filter = filterKategori === "Semua"
@@ -225,8 +215,6 @@ function renderBukuGrid() {
     };
   });
 }
-
-// ================== FILTER KATEGORI ==================
 document.querySelectorAll('.kategori-btn').forEach(btn => {
   btn.onclick = function() {
     document.querySelectorAll('.kategori-btn').forEach(b=>b.classList.remove('active'));
@@ -235,8 +223,6 @@ document.querySelectorAll('.kategori-btn').forEach(btn => {
     renderBukuGrid();
   };
 });
-
-// ================== FORM PINJAM ==================
 function renderBukuSelect() {
   const bukuDipinjam = document.getElementById('bukuDipinjam');
   bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
@@ -246,9 +232,8 @@ function renderBukuSelect() {
   });
 }
 
-// Data peminjaman (RAM/localStorage)
+// Peminjaman
 let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam")||"[]");
-
 document.getElementById('formPinjam').addEventListener('submit',async function(e){
   e.preventDefault();
   let nama = document.getElementById('namaPeminjam').value.trim();
@@ -265,14 +250,13 @@ document.getElementById('formPinjam').addEventListener('submit',async function(e
   showStrukPinjam(data);
   this.reset();
 });
-
 function showAlert(id,type,msg){
   let el = document.getElementById(id);
   el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
   setTimeout(()=>el.innerHTML="",2300);
 }
 
-// ================== RIWAYAT ==================
+// Riwayat
 function renderRiwayat() {
   const el = document.getElementById('riwayatTabel');
   if(pinjamList.length===0) {
@@ -319,7 +303,6 @@ function showStrukPinjam(data){
   document.getElementById('isiStruk').innerHTML = isi;
   document.getElementById('modalStruk').classList.add('show');
 }
-
 document.getElementById('closeModal').onclick = () => {
   document.getElementById('modalStruk').classList.remove('show');
 };
@@ -327,7 +310,6 @@ window.onclick = function(event){
   if(event.target === document.getElementById('modalStruk'))
     document.getElementById('modalStruk').classList.remove('show');
 };
-
 function formatTanggal(tgl) {
   if (!tgl) return '';
   const d = new Date(tgl);
