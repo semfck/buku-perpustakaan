@@ -30,13 +30,15 @@
   <main>
     <section class="hero">
       <div class="container">
-        <h1>Selamat Datang di Perpustakaan Digital</h1>
-        <p>Temukan dan pinjam buku favoritmu secara online dengan mudah dan cepat!</p>
+        <h1>Selamat Datang di <span class="brand-accent">Perpustakaan Digital</span></h1>
+        <p>
+          Temukan dan pinjam buku favoritmu secara online dengan mudah dan cepat!<br>
+          <span class="hero-sub">Buku-buku terbaru, klasik, dan best seller tersedia untukmu.</span>
+        </p>
         <a href="#koleksi" class="btn-primary">Lihat Koleksi Buku</a>
       </div>
     </section>
 
-    <!-- KOLEKSI -->
     <section id="koleksi" class="koleksi-buku-section">
       <div class="container">
         <h2>Koleksi Buku</h2>
@@ -51,7 +53,6 @@
       </div>
     </section>
 
-    <!-- FORM PINJAM -->
     <section id="formPinjamSection" class="form-pinjam-section">
       <div class="container">
         <h2>Formulir Peminjaman Buku</h2>
@@ -78,13 +79,12 @@
               <input type="date" id="tglPinjam" required>
             </div>
           </div>
-          <button type="submit" class="btn-primary">Pinjam Buku</button>
+          <button type="submit" class="btn-primary btn-big">Pinjam Buku</button>
         </form>
         <div id="alertPinjam"></div>
       </div>
     </section>
 
-    <!-- RIWAYAT -->
     <section id="riwayatSection" class="riwayat-section">
       <div class="container">
         <h2>Riwayat Peminjaman</h2>
@@ -182,7 +182,7 @@
   </main>
   <footer>
     <div class="container">
-      &copy; 2025 Perpustakaan Digital | Dibuat dengan ❤️ oleh semfck
+      &copy; 2025 Perpustakaan Digital | Dibuat dengan <span style="color:#f87171; font-size:1.15em;">&#10084;</span> oleh semfck
     </div>
   </footer>
   <script src="main.js"></script>
