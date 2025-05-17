@@ -23,6 +23,7 @@ const modalLogin = document.getElementById("modalLogin");
 const closeLoginModal = document.getElementById("closeLoginModal");
 let adminUser = null;
 
+// Admin login modal
 loginBtn.onclick = function() {
   modalLogin.classList.add("show");
 };
@@ -181,6 +182,7 @@ async function fetchBuku() {
     let snapshot = await db.collection("buku").get();
     semuaBuku = [];
     snapshot.forEach(doc => semuaBuku.push({ id: doc.id, ...doc.data() }));
+    // Perbaikan: dummy status harus 'tersedia'
     if (semuaBuku.length < 16) {
       DUMMY_BUKU.forEach(d => {
         if (!semuaBuku.some(b => b.judul === d.judul && b.kategori === d.kategori)) {
@@ -197,7 +199,7 @@ async function fetchBuku() {
   }
 }
 
-// Fungsi untuk memperbarui tampilan judul buku terpilih
+// Update judul buku terpilih
 function updateJudulBukuTerpilih() {
   const select = document.getElementById('bukuDipinjam');
   const judulDiv = document.getElementById('judulBukuTerpilih');
@@ -215,7 +217,7 @@ function updateJudulBukuTerpilih() {
   }
 }
 
-// Render grid buku dengan tombol pinjam yang berfungsi
+// Render grid koleksi buku
 function renderBukuGrid() {
   const daftarBuku = document.getElementById('daftarBuku');
   if (!daftarBuku) return;
@@ -229,6 +231,7 @@ function renderBukuGrid() {
   daftarBuku.innerHTML = filteredBooks.map(buku => {
     const isDummy = buku.id.startsWith('dummy-');
     const isDipinjam = buku.status === "dipinjam";
+    // Dummy tidak bisa dipinjam, hanya buku asli dan status tersedia yang aktif
     const btnDisabled = isDummy || isDipinjam;
     const statusHtml = isDummy ? '' : `
       <div class="status-buku ${isDipinjam ? 'dipinjam' : 'tersedia'}">
@@ -260,7 +263,7 @@ function renderBukuGrid() {
   });
 }
 
-// Fungsi untuk menangani aksi pinjam buku
+// Fungsi untuk handle tombol pinjam
 function handlePinjamBuku(bukuId) {
   if (bukuId.startsWith('dummy-')) {
     alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
@@ -283,7 +286,7 @@ function handlePinjamBuku(bukuId) {
   document.getElementById('formPinjamSection').scrollIntoView({behavior: "smooth"});
 }
 
-// Event listener untuk filter kategori
+// Kategori filter event
 document.querySelectorAll('.kategori-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.kategori-btn').forEach(b => b.classList.remove('active'));
@@ -293,7 +296,7 @@ document.querySelectorAll('.kategori-btn').forEach(btn => {
   });
 });
 
-// Render select buku untuk form peminjaman
+// Render select buku pada form pinjam
 function renderBukuSelect() {
   const bukuDipinjam = document.getElementById('bukuDipinjam');
   if (!bukuDipinjam) return;
@@ -301,7 +304,6 @@ function renderBukuSelect() {
   bukuDipinjam.innerHTML = '<option value="">-- Pilih Buku --</option>';
   let availableBooks = 0;
   semuaBuku.forEach(b => {
-    // Fallback: jika status tidak ada, dianggap tersedia
     if (!b.id.startsWith('dummy-') && (!b.status || b.status === "tersedia")) {
       bukuDipinjam.innerHTML += `<option value="${b.id}">${b.judul}${b.isbn ? ` (${b.isbn})` : ''}</option>`;
       availableBooks++;
@@ -323,7 +325,7 @@ function renderBukuSelect() {
 // Peminjaman
 let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam") || "[]");
 
-// Form submit peminjaman
+// Submit form pinjam
 document.getElementById('formPinjam').addEventListener('submit', async function(e) {
   e.preventDefault();
   const nama = document.getElementById('namaPeminjam').value.trim();
@@ -395,7 +397,7 @@ function hitungDenda(tglKembali, tglKembaliAsli) {
   return hariTelat > 0 ? hariTelat * 5000 : 0;
 }
 
-// Render riwayat peminjaman
+// Render riwayat
 function renderRiwayat() {
   const el = document.getElementById('riwayatTabel');
   if (!el) return;
@@ -469,7 +471,6 @@ function showStrukPinjam(data) {
   document.getElementById('modalStruk').classList.add('show');
 }
 
-// Fungsi untuk menghitung denda
 function calculateDenda(tglKembali, tglKembaliAsli) {
   if (!tglKembali || !tglKembaliAsli) return { denda: 0, hariTelat: 0 };
   const tglTarget = new Date(tglKembali);
