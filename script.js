@@ -1,78 +1,248 @@
-// Modul Manajemen Buku untuk Admin
+// === FIREBASE & DOM ===
 
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
+// --- Variabel Data Pinjam/Kembali (RAM, bukan Firestore) ---
+let pinjamList = [];
+let kembaliList = [];
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
-  authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
-  projectId: "buku-perpustakaan-d5800",
-  storageBucket: "buku-perpustakaan-d5800.firebasestorage.app",
-  messagingSenderId: "272079716908",
-  appId: "1:272079716908:web:f621036e0be69ef4ab4789",
-  measurementId: "G-QR79PE11PS"
+// --- Helper Firestore Buku (CRUD) ---
+async function getAllBuku() {
+  const snapshot = await firebase.firestore().collection("buku").get();
+  let arr = [];
+  snapshot.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
+  return arr;
+}
+
+async function getBukuById(id) {
+  const doc = await firebase.firestore().collection("buku").doc(id).get();
+  return doc.exists ? { id: doc.id, ...doc.data() } : null;
+}
+
+// --- Render Buku (Tabel & Dropdown) ---
+async function renderBuku(isAdmin = true) {
+  const daftarBuku = document.getElementById('daftarBuku');
+  const bukuDipinjam = document.getElementById('bukuDipinjam');
+  daftarBuku.innerHTML = '';
+  bukuDipinjam.innerHTML = '<option value="">Pilih Buku</option>';
+  const bukuList = await getAllBuku();
+
+  bukuList.forEach(buku => {
+    let aksi = '';
+    if (isAdmin) {
+      aksi = `<button class="btn btn-danger btn-sm" data-id="${buku.id}">Hapus</button>`;
+    }
+    daftarBuku.innerHTML += `
+      <tr>
+        <td>${buku.judul}</td>
+        <td>${buku.pengarang}</td>
+        <td>${buku.tahun}</td>
+        <td>${buku.kategori}</td>
+        <td>${buku.isbn}</td>
+        <td>${aksi}</td>
+      </tr>
+    `;
+    bukuDipinjam.innerHTML += `<option value="${buku.id}">${buku.judul} (${buku.isbn})</option>`;
+  });
+
+  // Hapus buku
+  if (isAdmin) {
+    daftarBuku.querySelectorAll('button.btn-danger').forEach(btn => {
+      btn.onclick = async function () {
+        if (confirm('Yakin hapus buku ini?')) {
+          await firebase.firestore().collection("buku").doc(this.dataset.id).delete();
+          showAlert(document.getElementById('alertBuku'), 'success', 'Buku berhasil dihapus!');
+          renderBuku();
+        }
+      };
+    });
+  }
+}
+
+// --- Buku: Tambah Buku ---
+document.getElementById('formTambahBuku').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!this.checkValidity()) {
+    this.classList.add('was-validated');
+    return;
+  }
+  const dataBuku = {
+    judul: document.getElementById('judul').value,
+    pengarang: document.getElementById('pengarang').value,
+    tahun: parseInt(document.getElementById('tahun').value),
+    kategori: document.getElementById('kategori').value,
+    isbn: document.getElementById('isbn').value
+  };
+  await firebase.firestore().collection("buku").add(dataBuku);
+  showAlert(document.getElementById('alertBuku'), 'success', 'Buku berhasil ditambahkan!');
+  renderBuku();
+  this.reset();
+  this.classList.remove('was-validated');
+});
+
+// --- PINJAMAN ---
+function renderPinjam() {
+  const daftarPinjam = document.getElementById('daftarPinjam');
+  daftarPinjam.innerHTML = '';
+  pinjamList.forEach((p, idx) => {
+    getBukuById(p.bukuId).then(buku => {
+      daftarPinjam.innerHTML += `
+        <tr>
+          <td>${p.nama}</td>
+          <td>${p.idPeminjam}</td>
+          <td>${buku ? buku.judul : '-'}</td>
+          <td>${formatTanggal(p.tglPinjam)}</td>
+          <td>
+            <button class="btn btn-info btn-sm" onclick="showStrukPinjam(${idx})">Struk</button>
+          </td>
+        </tr>
+      `;
+      renderPinjamKembali();
+    });
+  });
+}
+
+// --- Dropdown Transaksi Pinjam untuk Pengembalian ---
+function renderPinjamKembali() {
+  const pinjamKembali = document.getElementById('pinjamKembali');
+  pinjamKembali.innerHTML = '<option value="">Pilih Transaksi Pinjam</option>';
+  pinjamList.forEach((p, idx) => {
+    getBukuById(p.bukuId).then(buku => {
+      pinjamKembali.innerHTML += `<option value="${idx}">${p.nama} (${buku ? buku.judul : '-'})</option>`;
+    });
+  });
+}
+
+// --- PINJAM: Tambah Peminjaman ---
+document.getElementById('formPinjam').addEventListener('submit', function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!this.checkValidity()) {
+    this.classList.add('was-validated');
+    return;
+  }
+  const nama = document.getElementById('namaPeminjam').value;
+  const idPeminjam = document.getElementById('idPeminjam').value;
+  const bukuId = document.getElementById('bukuDipinjam').value;
+  const tglPinjam = document.getElementById('tglPinjam').value;
+  if (!bukuId) return showAlert(document.getElementById('alertPinjam'), 'danger', 'Buku wajib dipilih');
+  pinjamList.push({ nama, idPeminjam, bukuId, tglPinjam });
+  renderPinjam();
+  this.reset();
+  this.classList.remove('was-validated');
+  showStrukPinjam(pinjamList.length - 1);
+});
+
+// --- STRUK PINJAM ---
+window.showStrukPinjam = function (idx) {
+  const p = pinjamList[idx];
+  getBukuById(p.bukuId).then(buku => {
+    document.getElementById('isiStruk').innerHTML = `
+      <b>Struk Peminjaman Buku</b><hr/>
+      Nama: ${p.nama}<br>
+      ID: ${p.idPeminjam}<br>
+      Buku: ${buku ? buku.judul : '-'}<br>
+      Tgl Pinjam: ${formatTanggal(p.tglPinjam)}<br>
+      <small>Harap kembalikan buku maksimal 7 hari.</small>
+    `;
+    new bootstrap.Modal(document.getElementById('modalStruk')).show();
+  });
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// --- CRUD BUKU --- //
-
-export async function tambahBuku(dataBuku) {
-  try {
-    await addDoc(collection(db, "buku"), dataBuku);
-    return { success: true, message: "Buku berhasil ditambahkan!" };
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
+// --- PENGEMBALIAN ---
+function renderKembali() {
+  const daftarKembali = document.getElementById('daftarKembali');
+  daftarKembali.innerHTML = '';
+  kembaliList.forEach((k, idx) => {
+    getBukuById(k.bukuId).then(buku => {
+      const denda = hitungDenda(k.tglPinjam, k.tglKembali);
+      daftarKembali.innerHTML += `
+        <tr>
+          <td>${k.nama}</td>
+          <td>${k.idPeminjam}</td>
+          <td>${buku ? buku.judul : '-'}</td>
+          <td>${formatTanggal(k.tglPinjam)}</td>
+          <td>${formatTanggal(k.tglKembali)}</td>
+          <td>Rp${denda.toLocaleString('id-ID')}</td>
+          <td><button class="btn btn-info btn-sm" onclick="showStrukKembali(${idx})">Struk</button></td>
+        </tr>
+      `;
+    });
+  });
 }
 
-export async function hapusBuku(idBuku) {
-  try {
-    await deleteDoc(doc(db, "buku", idBuku));
-    return { success: true, message: "Buku berhasil dihapus!" };
-  } catch (e) {
-    return { success: false, message: e.message };
+// --- KEMBALI: Proses Pengembalian ---
+document.getElementById('formKembali').addEventListener('submit', function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!this.checkValidity()) {
+    this.classList.add('was-validated');
+    return;
   }
+  const idxPinjam = parseInt(document.getElementById('pinjamKembali').value);
+  const tglKembali = document.getElementById('tglKembali').value;
+  if (isNaN(idxPinjam)) return showAlert(document.getElementById('alertKembali'), 'danger', 'Transaksi pinjam wajib dipilih');
+  // Cek sudah dikembalikan?
+  if (kembaliList.find(k => k.nama === pinjamList[idxPinjam].nama && k.bukuId === pinjamList[idxPinjam].bukuId)) {
+    return showAlert(document.getElementById('alertKembali'), 'danger', 'Buku ini sudah dikembalikan oleh peminjam ini!');
+  }
+  const dataPinjam = pinjamList[idxPinjam];
+  kembaliList.push({ ...dataPinjam, tglKembali });
+  renderKembali();
+  this.reset();
+  this.classList.remove('was-validated');
+  showStrukKembali(kembaliList.length - 1);
+});
+
+// --- STRUK KEMBALI ---
+window.showStrukKembali = function (idx) {
+  const k = kembaliList[idx];
+  getBukuById(k.bukuId).then(buku => {
+    const denda = hitungDenda(k.tglPinjam, k.tglKembali);
+    document.getElementById('isiStruk').innerHTML = `
+      <b>Struk Pengembalian Buku</b><hr/>
+      Nama: ${k.nama}<br>
+      ID: ${k.idPeminjam}<br>
+      Buku: ${buku ? buku.judul : '-'}<br>
+      Tgl Pinjam: ${formatTanggal(k.tglPinjam)}<br>
+      Tgl Kembali: ${formatTanggal(k.tglKembali)}<br>
+      Denda: <b>Rp${denda.toLocaleString('id-ID')}</b>
+    `;
+    new bootstrap.Modal(document.getElementById('modalStruk')).show();
+  });
+};
+
+// --- UTILITAS ---
+function showAlert(container, type, msg) {
+  container.innerHTML = `
+    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+      ${msg}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 3500);
 }
 
-export async function ambilDaftarBuku() {
-  try {
-    const querySnapshot = await getDocs(collection(db, "buku"));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (e) {
-    return [];
-  }
+function formatTanggal(tgl) {
+  if (!tgl) return '';
+  const d = new Date(tgl);
+  return d.toLocaleDateString('id-ID');
 }
 
-// --- DATA DEFAULT 4 BUKU PER KATEGORI --- //
-
-export const DATA_BUKU_AWAL = [
-  // Fiksi
-  { judul: "Laskar Pelangi", pengarang: "Andrea Hirata", tahun: 2005, kategori: "Fiksi", isbn: "9789793062792" },
-  { judul: "Bumi", pengarang: "Tere Liye", tahun: 2014, kategori: "Fiksi", isbn: "9786021637005" },
-  { judul: "Cantik Itu Luka", pengarang: "Eka Kurniawan", tahun: 2002, kategori: "Fiksi", isbn: "9789799637666" },
-  { judul: "Supernova", pengarang: "Dewi Lestari", tahun: 2001, kategori: "Fiksi", isbn: "9789799251763" },
-  // Non Fiksi
-  { judul: "Atomic Habits", pengarang: "James Clear", tahun: 2018, kategori: "Non-Fiksi", isbn: "9780735211292" },
-  { judul: "Rich Dad Poor Dad", pengarang: "Robert Kiyosaki", tahun: 1997, kategori: "Non-Fiksi", isbn: "9780446677455" },
-  { judul: "Sapiens", pengarang: "Yuval Noah Harari", tahun: 2011, kategori: "Non-Fiksi", isbn: "9780062316097" },
-  { judul: "Filosofi Teras", pengarang: "Henry Manampiring", tahun: 2018, kategori: "Non-Fiksi", isbn: "9786024811679" },
-  // Teknologi
-  { judul: "Clean Code", pengarang: "Robert C. Martin", tahun: 2008, kategori: "Teknologi", isbn: "9780132350884" },
-  { judul: "Introduction to Algorithms", pengarang: "Cormen et al.", tahun: 2009, kategori: "Teknologi", isbn: "9780262033848" },
-  { judul: "Artificial Intelligence: A Modern Approach", pengarang: "Russell & Norvig", tahun: 2016, kategori: "Teknologi", isbn: "9780136042594" },
-  { judul: "JavaScript: The Good Parts", pengarang: "Douglas Crockford", tahun: 2008, kategori: "Teknologi", isbn: "9780596517748" },
-  // Sejarah
-  { judul: "Indonesia Etc.", pengarang: "Elizabeth Pisani", tahun: 2014, kategori: "Sejarah", isbn: "9780393082631" },
-  { judul: "Sejarah Dunia yang Disembunyikan", pengarang: "Jonathan Black", tahun: 2013, kategori: "Sejarah", isbn: "9786020309385" },
-  { judul: "History of Java", pengarang: "Thomas Stamford Raffles", tahun: 1817, kategori: "Sejarah", isbn: "9781108007729" },
-  { judul: "A People's History of the United States", pengarang: "Howard Zinn", tahun: 1980, kategori: "Sejarah", isbn: "9780062397348" }
-];
-
-// Fungsi untuk mengisi buku awal (hanya jalankan sekali saat setup awal)
-export async function isiBukuAwal() {
-  for (const buku of DATA_BUKU_AWAL) {
-    await tambahBuku(buku);
-  }
+function hitungDenda(tglPinjam, tglKembali) {
+  if (!tglPinjam || !tglKembali) return 0;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const pinjam = new Date(tglPinjam);
+  const kembali = new Date(tglKembali);
+  const diff = Math.floor((kembali - pinjam) / msPerDay);
+  const telat = diff - 7 > 0 ? diff - 7 : 0; // telat jika >7 hari
+  return telat * 5000;
 }
+
+// --- Inisialisasi pertama (fetch buku, render tab pinjam/kembali kosong) ---
+document.addEventListener('DOMContentLoaded', () => {
+  renderBuku();
+  renderPinjam();
+  renderKembali();
+});

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Admin - Manajemen Buku</title>
+  <title>Admin - Manajemen Perpustakaan</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="admin-buku.css">
   <!-- Firebase SDK -->
@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <div class="container mt-4">
+  <div class="container mt-4 mb-5">
     <!-- AUTH & LOGIN SECTION -->
     <div id="authSection" class="mb-4">
       <div id="userInfo" style="display:none">
@@ -30,55 +30,164 @@
         </div>
       </form>
     </div>
-    <!-- ADMIN SECTION -->
-    <div id="adminSection" style="display:none">
-      <h2>Admin: Manajemen Buku</h2>
-      <form id="formTambahBuku" class="row g-3 mb-4 needs-validation" novalidate>
-        <div class="col-md-3">
-          <input required type="text" class="form-control" id="judul" placeholder="Judul Buku">
-          <div class="invalid-feedback">Judul wajib diisi!</div>
+    <!-- MAIN NAVIGATION TABS -->
+    <div id="mainSection" style="display:none">
+      <ul class="nav nav-tabs mb-3" id="tabPerpus" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="buku-tab" data-bs-toggle="tab" data-bs-target="#buku" type="button" role="tab">Data Buku</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="pinjam-tab" data-bs-toggle="tab" data-bs-target="#pinjam" type="button" role="tab">Peminjaman</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="kembali-tab" data-bs-toggle="tab" data-bs-target="#kembali" type="button" role="tab">Pengembalian</button>
+        </li>
+      </ul>
+      <div class="tab-content" id="tabContent">
+        <!-- TAB BUKU -->
+        <div class="tab-pane fade show active" id="buku" role="tabpanel">
+          <form id="formTambahBuku" class="row g-3 mb-4 needs-validation" novalidate>
+            <div class="col-md-3">
+              <input required type="text" class="form-control" id="judul" placeholder="Judul Buku">
+              <div class="invalid-feedback">Judul wajib diisi!</div>
+            </div>
+            <div class="col-md-2">
+              <input required type="text" class="form-control" id="pengarang" placeholder="Pengarang">
+              <div class="invalid-feedback">Pengarang wajib diisi!</div>
+            </div>
+            <div class="col-md-1">
+              <input required type="number" min="1000" max="9999" class="form-control" id="tahun" placeholder="Tahun">
+              <div class="invalid-feedback">Tahun wajib 4 digit!</div>
+            </div>
+            <div class="col-md-2">
+              <select required class="form-select" id="kategori">
+                <option value="">Kategori...</option>
+                <option value="Fiksi">Fiksi</option>
+                <option value="Non-Fiksi">Non-Fiksi</option>
+                <option value="Teknologi">Teknologi</option>
+                <option value="Sejarah">Sejarah</option>
+              </select>
+              <div class="invalid-feedback">Pilih kategori!</div>
+            </div>
+            <div class="col-md-2">
+              <input required type="text" class="form-control" id="isbn" placeholder="ISBN">
+              <div class="invalid-feedback">ISBN wajib diisi!</div>
+            </div>
+            <div class="col-md-2 d-grid">
+              <button class="btn btn-success" type="submit">Tambah Buku</button>
+            </div>
+          </form>
+          <div id="alertBuku"></div>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Judul</th>
+                  <th>Pengarang</th>
+                  <th>Tahun</th>
+                  <th>Kategori</th>
+                  <th>ISBN</th>
+                  <th id="aksiHeader">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="daftarBuku"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="col-md-2">
-          <input required type="text" class="form-control" id="pengarang" placeholder="Pengarang">
-          <div class="invalid-feedback">Pengarang wajib diisi!</div>
+        <!-- TAB PEMINJAMAN -->
+        <div class="tab-pane fade" id="pinjam" role="tabpanel">
+          <form id="formPinjam" class="row g-3 mt-3 mb-3 needs-validation" novalidate>
+            <div class="col-md-3">
+              <input type="text" class="form-control" id="namaPeminjam" placeholder="Nama Peminjam" required>
+              <div class="invalid-feedback">Nama wajib diisi</div>
+            </div>
+            <div class="col-md-2">
+              <input type="text" class="form-control" id="idPeminjam" placeholder="ID/NIM/NIS" required>
+              <div class="invalid-feedback">ID wajib diisi</div>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select" id="bukuDipinjam" required>
+                <option value="">Pilih Buku</option>
+              </select>
+              <div class="invalid-feedback">Pilih buku</div>
+            </div>
+            <div class="col-md-2">
+              <input type="date" class="form-control" id="tglPinjam" required>
+              <div class="invalid-feedback">Tanggal wajib diisi</div>
+            </div>
+            <div class="col-md-2 d-grid">
+              <button class="btn btn-success" type="submit">Pinjam Buku</button>
+            </div>
+          </form>
+          <div id="alertPinjam"></div>
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle" id="tabelPinjam">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>ID</th>
+                  <th>Buku</th>
+                  <th>Tgl Pinjam</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="daftarPinjam"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="col-md-1">
-          <input required type="number" min="1000" max="9999" class="form-control" id="tahun" placeholder="Tahun">
-          <div class="invalid-feedback">Tahun wajib 4 digit!</div>
+        <!-- TAB PENGEMBALIAN -->
+        <div class="tab-pane fade" id="kembali" role="tabpanel">
+          <form id="formKembali" class="row g-3 mt-3 mb-3 needs-validation" novalidate>
+            <div class="col-md-4">
+              <select class="form-select" id="pinjamKembali" required>
+                <option value="">Pilih Transaksi Pinjam</option>
+              </select>
+              <div class="invalid-feedback">Pilih transaksi</div>
+            </div>
+            <div class="col-md-4">
+              <input type="date" class="form-control" id="tglKembali" required>
+              <div class="invalid-feedback">Tanggal wajib diisi</div>
+            </div>
+            <div class="col-md-4 d-grid">
+              <button class="btn btn-success" type="submit">Proses Pengembalian</button>
+            </div>
+          </form>
+          <div id="alertKembali"></div>
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle" id="tabelKembali">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>ID</th>
+                  <th>Buku</th>
+                  <th>Tgl Pinjam</th>
+                  <th>Tgl Kembali</th>
+                  <th>Denda</th>
+                  <th>Struk</th>
+                </tr>
+              </thead>
+              <tbody id="daftarKembali"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="col-md-2">
-          <select required class="form-select" id="kategori">
-            <option value="">Kategori...</option>
-            <option value="Fiksi">Fiksi</option>
-            <option value="Non-Fiksi">Non-Fiksi</option>
-            <option value="Teknologi">Teknologi</option>
-            <option value="Sejarah">Sejarah</option>
-          </select>
-          <div class="invalid-feedback">Pilih kategori!</div>
-        </div>
-        <div class="col-md-2">
-          <input required type="text" class="form-control" id="isbn" placeholder="ISBN">
-          <div class="invalid-feedback">ISBN wajib diisi!</div>
-        </div>
-        <div class="col-md-2 d-grid">
-          <button class="btn btn-success" type="submit">Tambah Buku</button>
-        </div>
-      </form>
+      </div>
     </div>
-    <div id="alertBuku"></div>
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Judul</th>
-          <th>Pengarang</th>
-          <th>Tahun</th>
-          <th>Kategori</th>
-          <th>ISBN</th>
-          <th id="aksiHeader">Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="daftarBuku"></tbody>
-    </table>
+    <!-- MODAL STRUK -->
+    <div class="modal fade" id="modalStruk" tabindex="-1">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Struk Transaksi</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="isiStruk"></div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" onclick="window.print()">Cetak</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <script type="module">
     // --- Konfigurasi Firebase ---
@@ -86,7 +195,7 @@
       apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
       authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
       projectId: "buku-perpustakaan-d5800",
-      storageBucket: "buku-perpustakaan-d5800.firebasestorage.app",
+      storageBucket: "buku-perpustakaan-d5800.appspot.com",
       messagingSenderId: "272079716908",
       appId: "1:272079716908:web:f621036e0be69ef4ab4789",
       measurementId: "G-QR79PE11PS"
@@ -95,43 +204,69 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // --- SETTING EMAIL ADMIN ---
     const adminEmail = "admin@domain.com"; // Ganti dengan email admin kamu jika berbeda
 
     // --- DOM Elements ---
     const loginForm = document.getElementById('loginForm');
-    const adminSection = document.getElementById('adminSection');
+    const authSection = document.getElementById('authSection');
+    const mainSection = document.getElementById('mainSection');
     const userInfo = document.getElementById('userInfo');
     const userEmail = document.getElementById('userEmail');
     const logoutBtn = document.getElementById('logoutBtn');
-    const aksiHeader = document.getElementById('aksiHeader');
+    // Buku
+    const formTambahBuku = document.getElementById('formTambahBuku');
     const alertBuku = document.getElementById('alertBuku');
+    const daftarBuku = document.getElementById('daftarBuku');
+    const aksiHeader = document.getElementById('aksiHeader');
+    // Pinjam
+    const formPinjam = document.getElementById('formPinjam');
+    const alertPinjam = document.getElementById('alertPinjam');
+    const daftarPinjam = document.getElementById('daftarPinjam');
+    const bukuDipinjam = document.getElementById('bukuDipinjam');
+    // Kembali
+    const formKembali = document.getElementById('formKembali');
+    const alertKembali = document.getElementById('alertKembali');
+    const daftarKembali = document.getElementById('daftarKembali');
+    const pinjamKembali = document.getElementById('pinjamKembali');
+    // Struk Modal
+    const modalStruk = new bootstrap.Modal(document.getElementById('modalStruk'));
+    const isiStruk = document.getElementById('isiStruk');
+
+    // --- DATA IN MEMORY (bisa diubah ke Firestore jika ingin persistent) ---
+    let pinjamList = [];
+    let kembaliList = [];
 
     // --- Autentikasi & UI Logic ---
     auth.onAuthStateChanged(user => {
       if (user && user.email === adminEmail) {
-        // ADMIN
         loginForm.style.display = 'none';
-        adminSection.style.display = '';
+        authSection.style.display = 'none';
+        mainSection.style.display = '';
         userInfo.style.display = '';
         userEmail.textContent = user.email;
         aksiHeader.style.display = '';
-        tampilkanDaftarBuku(true);
+        renderBuku();
+        renderPinjam();
+        renderKembali();
       } else if (user) {
-        // Bukan admin
         loginForm.style.display = 'none';
-        adminSection.style.display = 'none';
+        authSection.style.display = '';
+        mainSection.style.display = 'none';
         userInfo.style.display = '';
         userEmail.textContent = user.email;
         aksiHeader.style.display = 'none';
-        tampilkanDaftarBuku(false);
+        renderBuku(false);
+        renderPinjam(false);
+        renderKembali(false);
       } else {
-        // Belum login
         loginForm.style.display = '';
-        adminSection.style.display = 'none';
+        authSection.style.display = '';
+        mainSection.style.display = 'none';
         userInfo.style.display = 'none';
         aksiHeader.style.display = 'none';
-        tampilkanDaftarBuku(false);
+        renderBuku(false);
+        renderPinjam(false);
+        renderKembali(false);
       }
     });
 
@@ -141,43 +276,23 @@
       const password = document.getElementById('loginPassword').value;
       auth.signInWithEmailAndPassword(email, password)
         .then(() => loginForm.reset())
-        .catch(err => showAlert('danger', err.message));
+        .catch(err => showAlert(alertBuku, 'danger', err.message));
     };
 
     logoutBtn.onclick = () => auth.signOut();
 
     // --- CRUD Buku ---
-    async function tambahBuku(dataBuku) {
-      try {
-        await db.collection("buku").add(dataBuku);
-        showAlert('success', "Buku berhasil ditambahkan!");
-        tampilkanDaftarBuku(true);
-      } catch (e) {
-        showAlert('danger', e.message);
-      }
-    }
-
-    async function hapusBuku(idBuku) {
-      try {
-        await db.collection("buku").doc(idBuku).delete();
-        showAlert('success', "Buku berhasil dihapus!");
-        tampilkanDaftarBuku(true);
-      } catch (e) {
-        showAlert('danger', e.message);
-      }
-    }
-
-    async function tampilkanDaftarBuku(isAdmin) {
+    async function renderBuku(isAdmin = true) {
       const snapshot = await db.collection("buku").get();
-      const tbody = document.getElementById('daftarBuku');
-      tbody.innerHTML = '';
+      daftarBuku.innerHTML = '';
+      bukuDipinjam.innerHTML = '<option value="">Pilih Buku</option>';
       snapshot.forEach(doc => {
         const buku = doc.data();
         let aksi = '';
         if (isAdmin) {
           aksi = `<button class="btn btn-danger btn-sm" data-id="${doc.id}">Hapus</button>`;
         }
-        tbody.innerHTML += `
+        daftarBuku.innerHTML += `
           <tr>
             <td>${buku.judul}</td>
             <td>${buku.pengarang}</td>
@@ -187,9 +302,10 @@
             <td>${aksi}</td>
           </tr>
         `;
+        bukuDipinjam.innerHTML += `<option value="${doc.id}">${buku.judul} (${buku.isbn})</option>`;
       });
       if (isAdmin) {
-        document.querySelectorAll('button.btn-danger').forEach(btn => {
+        daftarBuku.querySelectorAll('button.btn-danger').forEach(btn => {
           btn.onclick = function() {
             if (confirm('Yakin hapus buku ini?')) hapusBuku(this.dataset.id);
           };
@@ -197,8 +313,26 @@
       }
     }
 
-    // --- Validasi Form dan Tambah Buku (khusus admin) ---
-    const formTambahBuku = document.getElementById('formTambahBuku');
+    async function tambahBuku(dataBuku) {
+      try {
+        await db.collection("buku").add(dataBuku);
+        showAlert(alertBuku, 'success', "Buku berhasil ditambahkan!");
+        renderBuku();
+      } catch (e) {
+        showAlert(alertBuku, 'danger', e.message);
+      }
+    }
+
+    async function hapusBuku(idBuku) {
+      try {
+        await db.collection("buku").doc(idBuku).delete();
+        showAlert(alertBuku, 'success', "Buku berhasil dihapus!");
+        renderBuku();
+      } catch (e) {
+        showAlert(alertBuku, 'danger', e.message);
+      }
+    }
+
     formTambahBuku && formTambahBuku.addEventListener('submit', function(e) {
       e.preventDefault();
       e.stopPropagation();
@@ -218,17 +352,147 @@
       formTambahBuku.classList.remove('was-validated');
     });
 
-    // --- Alert helper ---
-    function showAlert(type, msg) {
-      alertBuku.innerHTML = `
+    // --- PINJAMAN ---
+    function renderPinjam() {
+      daftarPinjam.innerHTML = '';
+      pinjamList.forEach((p, idx) => {
+        const buku = bukuDipinjam.querySelector(`option[value="${p.bukuId}"]`)?.textContent || '-';
+        daftarPinjam.innerHTML += `
+          <tr>
+            <td>${p.nama}</td>
+            <td>${p.idPeminjam}</td>
+            <td>${buku}</td>
+            <td>${formatTanggal(p.tglPinjam)}</td>
+            <td>
+              <button class="btn btn-info btn-sm" onclick="showStrukPinjam(${idx})">Struk</button>
+            </td>
+          </tr>
+        `;
+      });
+      // update select pengembalian
+      pinjamKembali.innerHTML = '<option value="">Pilih Transaksi Pinjam</option>';
+      pinjamList.forEach((p, idx) => {
+        const buku = bukuDipinjam.querySelector(`option[value="${p.bukuId}"]`)?.textContent || '-';
+        pinjamKembali.innerHTML += `<option value="${idx}">${p.nama} (${buku})</option>`;
+      });
+    }
+
+    formPinjam && formPinjam.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!formPinjam.checkValidity()) {
+        formPinjam.classList.add('was-validated');
+        return;
+      }
+      const nama = document.getElementById('namaPeminjam').value;
+      const idPeminjam = document.getElementById('idPeminjam').value;
+      const bukuId = document.getElementById('bukuDipinjam').value;
+      const tglPinjam = document.getElementById('tglPinjam').value;
+      if (!bukuId) return showAlert(alertPinjam, 'danger', 'Buku wajib dipilih');
+      pinjamList.push({ nama, idPeminjam, bukuId, tglPinjam });
+      renderPinjam();
+      formPinjam.reset();
+      formPinjam.classList.remove('was-validated');
+      showStrukPinjam(pinjamList.length-1);
+    });
+
+    window.showStrukPinjam = function(idx) {
+      const p = pinjamList[idx];
+      const buku = bukuDipinjam.querySelector(`option[value="${p.bukuId}"]`)?.textContent || '-';
+      isiStruk.innerHTML = `
+        <b>Struk Peminjaman Buku</b><hr/>
+        Nama: ${p.nama}<br>
+        ID: ${p.idPeminjam}<br>
+        Buku: ${buku}<br>
+        Tgl Pinjam: ${formatTanggal(p.tglPinjam)}<br>
+        <small>Harap kembalikan buku maksimal 7 hari.</small>
+      `;
+      modalStruk.show();
+    };
+
+    // --- PENGEMBALIAN ---
+    function renderKembali() {
+      daftarKembali.innerHTML = '';
+      kembaliList.forEach((k, idx) => {
+        const buku = bukuDipinjam.querySelector(`option[value="${k.bukuId}"]`)?.textContent || '-';
+        const denda = hitungDenda(k.tglPinjam, k.tglKembali);
+        daftarKembali.innerHTML += `
+          <tr>
+            <td>${k.nama}</td>
+            <td>${k.idPeminjam}</td>
+            <td>${buku}</td>
+            <td>${formatTanggal(k.tglPinjam)}</td>
+            <td>${formatTanggal(k.tglKembali)}</td>
+            <td>Rp${denda.toLocaleString('id-ID')}</td>
+            <td><button class="btn btn-info btn-sm" onclick="showStrukKembali(${idx})">Struk</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    formKembali && formKembali.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!formKembali.checkValidity()) {
+        formKembali.classList.add('was-validated');
+        return;
+      }
+      const idxPinjam = parseInt(document.getElementById('pinjamKembali').value);
+      const tglKembali = document.getElementById('tglKembali').value;
+      if (isNaN(idxPinjam)) return showAlert(alertKembali, 'danger', 'Transaksi pinjam wajib dipilih');
+      // Cek sudah dikembalikan?
+      if (kembaliList.find(k => k.nama === pinjamList[idxPinjam].nama && k.bukuId === pinjamList[idxPinjam].bukuId)) {
+        return showAlert(alertKembali, 'danger', 'Buku ini sudah dikembalikan oleh peminjam ini!');
+      }
+      const dataPinjam = pinjamList[idxPinjam];
+      kembaliList.push({ ...dataPinjam, tglKembali });
+      renderKembali();
+      formKembali.reset();
+      formKembali.classList.remove('was-validated');
+      showStrukKembali(kembaliList.length-1);
+    });
+
+    window.showStrukKembali = function(idx) {
+      const k = kembaliList[idx];
+      const buku = bukuDipinjam.querySelector(`option[value="${k.bukuId}"]`)?.textContent || '-';
+      const denda = hitungDenda(k.tglPinjam, k.tglKembali);
+      isiStruk.innerHTML = `
+        <b>Struk Pengembalian Buku</b><hr/>
+        Nama: ${k.nama}<br>
+        ID: ${k.idPeminjam}<br>
+        Buku: ${buku}<br>
+        Tgl Pinjam: ${formatTanggal(k.tglPinjam)}<br>
+        Tgl Kembali: ${formatTanggal(k.tglKembali)}<br>
+        Denda: <b>Rp${denda.toLocaleString('id-ID')}</b>
+      `;
+      modalStruk.show();
+    };
+
+    // --- UTILITAS ---
+    function showAlert(container, type, msg) {
+      container.innerHTML = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
           ${msg}
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       `;
       setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(el => el.remove());
+        container.innerHTML = '';
       }, 3500);
+    }
+    function formatTanggal(tgl) {
+      if (!tgl) return '';
+      const d = new Date(tgl);
+      return d.toLocaleDateString('id-ID');
+    }
+    function hitungDenda(tglPinjam, tglKembali) {
+      if (!tglPinjam || !tglKembali) return 0;
+      const msPerDay = 24*60*60*1000;
+      const pinjam = new Date(tglPinjam);
+      const kembali = new Date(tglKembali);
+      const diff = Math.floor((kembali-pinjam)/msPerDay);
+      const telat = diff - 7 > 0 ? diff-7 : 0; // telat jika >7 hari
+      return telat * 5000;
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

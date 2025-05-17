@@ -1,54 +1,159 @@
 body {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f7fafc 0%, #c3cfe2 100%);
   min-height: 100vh;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  letter-spacing: 0.01em;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.015em;
 }
 
 .container {
   background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 8px 24px 0 rgba(56, 65, 87, 0.07);
+  border-radius: 18px;
+  box-shadow: 0 8px 28px 0 rgba(56, 65, 87, 0.11);
+  padding: 34px 34px 22px 34px;
   margin-top: 40px;
   margin-bottom: 40px;
-  padding: 32px 32px 24px 32px;
-  min-width: 320px;
-  max-width: 950px;
+  max-width: 1080px;
 }
 
 h2 {
   font-weight: 700;
-  color: #24292f;
+  color: #2563eb;
   letter-spacing: 0.03em;
-  margin-bottom: 28px;
-}
-
-/* === Login Card === */
-#authSection {
-  background: #f7fafc;
-  border-radius: 14px;
-  box-shadow: 0 2px 10px 0 rgba(140,152,164,.11);
-  padding: 32px 24px 24px 24px;
   margin-bottom: 30px;
-  max-width: 430px;
 }
 
-#loginForm input {
+.nav-tabs {
+  border-bottom: 2px solid #e0e6ed;
+  margin-bottom: 20px;
+}
+
+.nav-tabs .nav-link {
+  color: #4b5563;
+  font-weight: 600;
+  border-radius: 0;
+  border: none;
+  padding: 12px 34px;
+  transition: color .18s, background .18s;
+}
+
+.nav-tabs .nav-link.active {
+  color: #2563eb !important;
+  background: #f3f6fc;
+  border-bottom: 2.5px solid #2563eb;
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+  background: #f9fafb;
+  color: #1d4ed8 !important;
+}
+
+.form-control, .form-select {
   border-radius: 8px;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  transition: border .2s;
+  font-size: 1rem;
+  background: #f9fafb;
+  border: 1.5px solid #e0e6ed;
+  transition: border .17s;
 }
 
-#loginForm input:focus {
-  border: 1.5px solid #2563eb;
+.form-control:focus, .form-select:focus {
+  border: 1.7px solid #2563eb;
   box-shadow: 0 0 0 2px #2563eb22;
   outline: none;
 }
 
-#loginForm button {
+.btn-success {
+  background: linear-gradient(90deg, #2563eb 50%, #5ea3f8 100%);
   font-weight: 600;
-  transition: background .15s;
+  border: none;
+  letter-spacing: 0.02em;
+  transition: background .16s;
+}
+
+.btn-success:hover, .btn-success:focus {
+  background: linear-gradient(90deg, #1e40af 60%, #2563eb 100%);
+}
+
+.btn-info {
+  background: linear-gradient(90deg, #38bdf8 50%, #0ea5e9 100%);
+  border: none;
+  font-weight: 500;
+  color: #fff;
+  padding: 3px 17px;
+  border-radius: 7px;
+  transition: background .16s;
+}
+
+.btn-info:hover {
+  background: linear-gradient(90deg, #0284c7 60%, #38bdf8 100%);
+  color: #fff;
+}
+
+.btn-danger {
+  background: linear-gradient(90deg,#f43f5e 70%,#fb7185 100%);
+  border: none;
+  font-weight: 500;
+  color: #fff;
+  padding: 3px 17px;
+  border-radius: 7px;
+  transition: background .14s;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
+  color: #fff;
+}
+
+.alert {
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 15px;
+  border: none;
+  box-shadow: 0 2px 10px 0 rgba(30,64,175,0.07);
+}
+
+.table {
+  background: #f6f9fd;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px 0 rgba(30,64,175,0.06);
+  margin-top: 10px;
+}
+
+.table th {
+  background: linear-gradient(90deg, #2563eb 80%, #5ea3f8 100%);
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: none;
+}
+
+.table th, .table td {
+  vertical-align: middle !important;
+  padding: 13px 10px !important;
+  border: none;
+}
+
+.table tbody tr {
+  transition: background .17s;
+}
+
+.table tbody tr:hover {
+  background: #e7f0fd;
+}
+
+.table-responsive {
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+input[type="date"]:not(:focus):not([value=""])::-webkit-input-placeholder { color: #bcbcbc; }
+
+#mainSection form {
+  background: #f0f4f8;
+  border-radius: 12px;
+  padding: 18px 20px 10px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px 0 rgba(140,152,164,.08);
 }
 
 #userInfo {
@@ -69,99 +174,30 @@ h2 {
   padding: 4px 18px;
 }
 
-/* ===== Admin Section ===== */
-#adminSection form {
-  background: #f0f4f8;
-  border-radius: 12px;
-  padding: 18px 18px 10px 18px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px 0 rgba(140,152,164,.08);
+.modal-content {
+  border-radius: 13px;
+  box-shadow: 0 7px 28px 0 rgba(22,38,108,0.14);
 }
 
-#formTambahBuku input, #formTambahBuku select {
-  border-radius: 7px;
-  background: #f9fafb;
-  border: 1.3px solid #e0e6ed;
-  font-size: 1rem;
-  transition: border .18s;
-}
-
-#formTambahBuku input:focus, #formTambahBuku select:focus {
-  border: 1.5px solid #2563eb;
-  box-shadow: 0 0 0 2px #2563eb22;
-  outline: none;
-}
-
-#formTambahBuku button {
+.modal-title {
+  color: #2563eb;
   font-weight: 600;
-  background: linear-gradient(90deg, #2563eb 60%, #5ea3f8 100%);
-  border: none;
+  letter-spacing: 0.01em;
 }
 
-#formTambahBuku button:hover {
-  background: linear-gradient(90deg, #1e40af 60%, #2563eb 100%);
-}
-
-.alert {
-  border-radius: 8px;
-  font-size: 1rem;
-  margin-bottom: 18px;
-  border: none;
-  box-shadow: 0 2px 10px 0 rgba(30,64,175,0.07);
-}
-
-.table {
-  background: #fbfcfd;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 8px 0 rgba(30,64,175,0.06);
-  margin-top: 10px;
-}
-
-.table thead tr {
-  background: linear-gradient(90deg, #2563eb 80%, #5ea3f8 100%);
-  color: #fff;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.table th, .table td {
-  vertical-align: middle !important;
-  padding: 14px 10px !important;
-}
-
-.table tbody tr {
-  transition: background .18s;
-}
-
-.table tbody tr:hover {
-  background: #e7f0fd;
-}
-
-.table .btn-danger {
-  font-size: .93rem;
-  padding: 3px 18px;
-  border-radius: 7px;
-  background: linear-gradient(90deg,#f43f5e 60%,#fb7185 100%);
-  border: none;
-  font-weight: 500;
-  transition: background .16s, color .16s;
-}
-
-.table .btn-danger:hover {
-  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
-  color: #fff;
+.modal-body {
+  color: #22223b;
+  font-size: 1.08rem;
 }
 
 @media (max-width: 900px) {
-  .container { padding: 20px 4vw 16px 4vw; }
-  #adminSection form, #authSection { padding: 16px 10px 10px 10px;}
-  .table th, .table td { padding: 10px 5px !important; }
-  h2 { font-size: 1.38rem;}
+  .container { padding: 10px 2vw 10px 2vw; }
+  .table th, .table td { padding: 9px 4px !important; }
+  .nav-tabs .nav-link { padding: 10px 12px; font-size: 0.98rem;}
 }
 
 @media (max-width: 600px) {
-  .container { padding: 9px 0 5px 0;}
-  #adminSection form, #authSection { padding: 8px 2px 5px 2px;}
-  h2 { font-size: 1.1rem;}
+  .container { padding: 4px 0 2px 0;}
+  h2 { font-size: 1.2rem;}
+  #mainSection form { padding: 9px 5px 5px 5px;}
 }
