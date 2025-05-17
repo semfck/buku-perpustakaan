@@ -69,8 +69,8 @@ main .container {
 .hero p { font-size: 1.18rem; margin-bottom: 28px; color: #525252; }
 .btn-primary {
   display: inline-block;
-  background: linear-gradient(90deg, #3f37c9 60%, #4895ef 100%);
-  color: #fff;
+  background: linear-gradient(90deg, #fbbf24 70%, #a5b4fc 100%);
+  color: #232946;
   font-weight: 600;
   padding: 12px 32px;
   border: none;
@@ -80,9 +80,11 @@ main .container {
   letter-spacing: 0.02em;
   transition: background .19s, box-shadow .17s;
   box-shadow: 0 2px 14px 0 rgba(86, 111, 255, 0.07);
+  margin-bottom: 12px;
 }
 .btn-primary:hover, .btn-primary:focus {
-  background: linear-gradient(90deg, #2d2a6e 70%, #3f37c9 100%);
+  background: linear-gradient(90deg, #f59e42 70%, #3f37c9 100%);
+  color: #fff;
 }
 .btn-big { font-size: 1.17rem; padding: 15px 40px; }
 .koleksi-buku-section h2,
@@ -187,7 +189,6 @@ main .container {
 .card-buku .btn-pinjam:hover:not(:disabled) {
   background: linear-gradient(90deg, #3f37c9 60%, #1e1b4b 100%);
 }
-/* Tampilan status buku (tersedia/dipinjam/tidak tersedia) */
 .status-buku {
   font-size: .97rem;
   font-weight: 600;
@@ -569,7 +570,6 @@ footer {
 #adminDaftarPeminjaman tbody tr:hover {
   background: #c7d2fe;
 }
-/* Tambahan untuk invoice/denda */
 .invoice-struk {
   border: 1.5px solid #e5e7eb;
   background: #fafdff;

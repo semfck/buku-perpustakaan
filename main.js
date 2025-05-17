@@ -70,6 +70,47 @@ auth.onAuthStateChanged(function(user){
   }
 });
 
+// Data dummy
+const DUMMY_BUKU = [
+  {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
+  {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
+  {judul:"Supernova",pengarang:"Dewi Lestari",tahun:2001,kategori:"Fiksi",isbn:"9789799234426"},
+  {judul:"Perahu Kertas",pengarang:"Dewi Lestari",tahun:2009,kategori:"Fiksi",isbn:"9789791227228"},
+  {judul:"Sapiens",pengarang:"Yuval Noah Harari",tahun:2011,kategori:"Non-Fiksi",isbn:"9786024246942"},
+  {judul:"Atomic Habits",pengarang:"James Clear",tahun:2018,kategori:"Non-Fiksi",isbn:"9786020631049"},
+  {judul:"Berani Tidak Disukai",pengarang:"Ichiro Kishimi",tahun:2013,kategori:"Non-Fiksi",isbn:"9786023854315"},
+  {judul:"Filosofi Teras",pengarang:"Henry Manampiring",tahun:2018,kategori:"Non-Fiksi",isbn:"9786024810228"},
+  {judul:"Clean Code",pengarang:"Robert C. Martin",tahun:2008,kategori:"Teknologi",isbn:"9780132350884"},
+  {judul:"The Pragmatic Programmer",pengarang:"Andrew Hunt",tahun:1999,kategori:"Teknologi",isbn:"9780135957059"},
+  {judul:"Introduction to Algorithms",pengarang:"Thomas H. Cormen",tahun:2009,kategori:"Teknologi",isbn:"9780262033848"},
+  {judul:"Python Crash Course",pengarang:"Eric Matthes",tahun:2016,kategori:"Teknologi",isbn:"9781593276034"},
+  {judul:"Sejarah Dunia yang Disembunyikan",pengarang:"Jonathan Black",tahun:2018,kategori:"Sejarah",isbn:"9786023855183"},
+  {judul:"A History of Modern Indonesia",pengarang:"Adrian Vickers",tahun:2005,kategori:"Sejarah",isbn:"9780521833992"},
+  {judul:"Indonesia Etc.",pengarang:"Elizabeth Pisani",tahun:2014,kategori:"Sejarah",isbn:"9780393079974"},
+  {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"}
+];
+
+// PATCH: Tambah buku dummy ke Firestore jika koleksi buku kosong
+async function seedDummyBooksIfNeeded() {
+  let snapshot = await db.collection("buku").get();
+  if (snapshot.empty) {
+    for (const d of DUMMY_BUKU) {
+      await db.collection("buku").add({ ...d, status: "tersedia" });
+    }
+  }
+}
+
+// PATCH: Tombol admin untuk seed dummy kapan saja
+window.tambahDummyBuku = async function() {
+  if (!confirm("Tambah semua buku dummy ke koleksi buku?")) return;
+  for (const d of DUMMY_BUKU) {
+    await db.collection("buku").add({ ...d, status: "tersedia" });
+  }
+  showAlert("alertAdmin", "success", "Buku dummy berhasil ditambahkan ke Firestore!");
+  renderAdminBuku();
+  fetchBuku();
+};
+
 // Admin buku
 async function renderAdminBuku() {
   let snapshot = await db.collection("buku").get();
@@ -159,42 +200,19 @@ window.hapusBukuAdmin = async function(id){
   fetchBuku();
 };
 
-// Data dummy
-const DUMMY_BUKU = [
-  {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
-  {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
-  {judul:"Supernova",pengarang:"Dewi Lestari",tahun:2001,kategori:"Fiksi",isbn:"9789799234426"},
-  {judul:"Perahu Kertas",pengarang:"Dewi Lestari",tahun:2009,kategori:"Fiksi",isbn:"9789791227228"},
-  {judul:"Sapiens",pengarang:"Yuval Noah Harari",tahun:2011,kategori:"Non-Fiksi",isbn:"9786024246942"},
-  {judul:"Atomic Habits",pengarang:"James Clear",tahun:2018,kategori:"Non-Fiksi",isbn:"9786020631049"},
-  {judul:"Berani Tidak Disukai",pengarang:"Ichiro Kishimi",tahun:2013,kategori:"Non-Fiksi",isbn:"9786023854315"},
-  {judul:"Filosofi Teras",pengarang:"Henry Manampiring",tahun:2018,kategori:"Non-Fiksi",isbn:"9786024810228"},
-  {judul:"Clean Code",pengarang:"Robert C. Martin",tahun:2008,kategori:"Teknologi",isbn:"9780132350884"},
-  {judul:"The Pragmatic Programmer",pengarang:"Andrew Hunt",tahun:1999,kategori:"Teknologi",isbn:"9780135957059"},
-  {judul:"Introduction to Algorithms",pengarang:"Thomas H. Cormen",tahun:2009,kategori:"Teknologi",isbn:"9780262033848"},
-  {judul:"Python Crash Course",pengarang:"Eric Matthes",tahun:2016,kategori:"Teknologi",isbn:"9781593276034"},
-  {judul:"Sejarah Dunia yang Disembunyikan",pengarang:"Jonathan Black",tahun:2018,kategori:"Sejarah",isbn:"9786023855183"},
-  {judul:"A History of Modern Indonesia",pengarang:"Adrian Vickers",tahun:2005,kategori:"Sejarah",isbn:"9780521833992"},
-  {judul:"Indonesia Etc.",pengarang:"Elizabeth Pisani",tahun:2014,kategori:"Sejarah",isbn:"9780393079974"},
-  {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"}
-];
-
 // Koleksi Buku
 let semuaBuku = [];
 let filterKategori = "Semua";
+let dummySeeded = false;
 async function fetchBuku() {
   try {
+    if (!dummySeeded) {
+      await seedDummyBooksIfNeeded();
+      dummySeeded = true;
+    }
     let snapshot = await db.collection("buku").get();
     semuaBuku = [];
     snapshot.forEach(doc => semuaBuku.push({ id: doc.id, ...doc.data() }));
-    // Tambahkan dummy jika koleksi kurang dari minimal
-    if (semuaBuku.length < 16) {
-      DUMMY_BUKU.forEach(d => {
-        if (!semuaBuku.some(b => b.judul === d.judul && b.kategori === d.kategori)) {
-          semuaBuku.push({ ...d, id: 'dummy-'+d.judul.replace(/\s/g,''), status: "tersedia" });
-        }
-      });
-    }
     semuaBuku.forEach(b => {
       if (!b.status) b.status = "tersedia";
     });
@@ -675,3 +693,40 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 });
+
+// Fungsi pinjam buku dari tombol di grid (pilih & highlight di select)
+function handlePinjamBuku(bukuId) {
+  if (bukuId.startsWith('dummy-')) {
+    alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
+    return;
+  }
+  const buku = semuaBuku.find(b => b.id === bukuId);
+  if (!buku) {
+    showAlert('alertPinjam', 'danger', 'Buku tidak ditemukan!');
+    return;
+  }
+  if (buku.status !== "tersedia") {
+    showAlert('alertPinjam', 'danger', 'Buku sedang dipinjam atau tidak tersedia!');
+    return;
+  }
+  // Tambahkan ke multi select jika ada
+  const multiSelect = document.getElementById('multiBukuSelect');
+  if (multiSelect) {
+    for (let i = 0; i < multiSelect.options.length; i++) {
+      if (multiSelect.options[i].value === bukuId) {
+        multiSelect.options[i].selected = true;
+        multiSelect.dispatchEvent(new Event('change'));
+        break;
+      }
+    }
+    document.getElementById('formPinjamSection').scrollIntoView({behavior: "smooth"});
+    return;
+  }
+  // Jika tidak ada multi, fallback ke single select
+  const select = document.getElementById('bukuDipinjam');
+  select.value = bukuId;
+  select.classList.add('highlighted');
+  setTimeout(() => select.classList.remove('highlighted'), 700);
+  updateJudulBukuTerpilih();
+  document.getElementById('formPinjamSection').scrollIntoView({behavior: "smooth"});
+}

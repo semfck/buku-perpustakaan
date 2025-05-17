@@ -105,6 +105,7 @@
     <section id="adminSection" class="admin-section" style="display:none;">
       <div class="container">
         <h2>Manajemen Data Buku <span id="adminEmailShow"></span></h2>
+        <button type="button" class="btn-primary" style="margin-bottom:12px;" onclick="tambahDummyBuku()">Tambah Buku Dummy</button>
         <form id="formTambahBuku" class="admin-form" autocomplete="off">
           <input type="hidden" id="bukuIdEdit" value="">
           <div class="form-row">
@@ -197,7 +198,6 @@
     </div>
   </footer>
   <script src="main.js"></script>
-  <!-- ENHANCEMENT: Judul buku terpilih tampil otomatis (tetap ada agar UX smooth walau JS utama error) -->
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       const select = document.getElementById('bukuDipinjam');
