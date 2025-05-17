@@ -70,11 +70,15 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="bukuDipinjam">Buku yang Dipinjam</label>
-              <select id="bukuDipinjam" required>
+              <label for="bukuDipinjam">Buku yang Dipinjam (Single)</label>
+              <select id="bukuDipinjam">
                 <option value="">-- Pilih Buku --</option>
               </select>
               <div id="judulBukuTerpilih" class="judul-buku-terpilih"></div>
+            </div>
+            <div class="form-group" style="flex-basis:100%" id="multiBukuDipinjamWrapper">
+              <!-- Nanti diisi script renderMultiBukuPinjam -->
+              <div id="multiBukuDipinjam"></div>
             </div>
             <div class="form-group">
               <label for="tglPinjam">Tanggal Pinjam</label>
@@ -86,7 +90,6 @@
             </div>
           </div>
           <button type="submit" class="btn-primary btn-big">Pinjam Buku</button>
-          <button class="pinjam-btn" data-id="${book.id}">Pinjam Buku</button>
         </form>
         <div id="alertPinjam"></div>
       </div>
@@ -150,6 +153,7 @@
                 <th>Tahun</th>
                 <th>Kategori</th>
                 <th>ISBN</th>
+                <th>Status</th>
                 <th>Aksi</th>
               </tr>
             </thead>
