@@ -119,10 +119,16 @@ auth.onAuthStateChanged(function(user){
 
 // --- Dummy Data ---
 const DUMMY_BUKU = [
-  // ... (isi seperti sebelumnya, singkat di sini)
   {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
   {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
-  // ... dst ...
+  {judul:"Supernova",pengarang:"Dewi Lestari",tahun:2001,kategori:"Fiksi",isbn:"9789799234426"},
+  {judul:"Perahu Kertas",pengarang:"Dewi Lestari",tahun:2009,kategori:"Fiksi",isbn:"9789791227228"},
+  {judul:"Sapiens",pengarang:"Yuval Noah Harari",tahun:2011,kategori:"Non-Fiksi",isbn:"9786024246942"},
+  {judul:"Atomic Habits",pengarang:"James Clear",tahun:2018,kategori:"Non-Fiksi",isbn:"9786020631049"},
+  {judul:"Clean Code",pengarang:"Robert C. Martin",tahun:2008,kategori:"Teknologi",isbn:"9780132350884"},
+  {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"},
+  {judul:"Introduction to Algorithms",pengarang:"Thomas H. Cormen",tahun:2009,kategori:"Teknologi",isbn:"9780262033848"},
+  {judul:"Python Crash Course",pengarang:"Eric Matthes",tahun:2016,kategori:"Teknologi",isbn:"9781593276034"}
 ];
 async function seedDummyBooksIfNeeded() {
   let snapshot = await db.collection("buku").limit(1).get();
@@ -466,30 +472,26 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
     return;
   }
   try {
-    const batch = db.batch();
     let invoiceDetails = [];
     for (let buku of bukuDatas) {
       const data = {
-        nama, idPeminjam,
+        nama,
+        idPeminjam,
         bukuId: buku.id,
-        tglPinjam,
-        tglKembali,
+        tglPinjam: tglPinjam,
+        tglKembali: tglKembali,
         judul: buku.judul,
         pengarang: buku.pengarang,
         kategori: buku.kategori,
-        isbn: buku.isbn
-      };
-      const newRef = db.collection("peminjaman").doc();
-      batch.set(newRef, {
-        ...data,
+        isbn: buku.isbn,
         status: "dipinjam",
         tglKembaliAsli: null
-      });
-      batch.update(db.collection("buku").doc(buku.id), { status: "dipinjam" });
+      };
+      await db.collection("peminjaman").add(data);
+      await db.collection("buku").doc(buku.id).update({ status: "dipinjam" });
       pinjamList.push(data);
       invoiceDetails.push(data);
     }
-    await batch.commit();
     localStorage.setItem("riwayatPinjam", JSON.stringify(pinjamList));
     renderRiwayat();
     if (invoiceDetails.length === 1) showStrukPinjam(invoiceDetails[0]);
