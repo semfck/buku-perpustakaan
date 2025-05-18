@@ -504,7 +504,15 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
     renderMultiBukuPinjam();
     showAlert('alertPinjam', 'success', 'Buku berhasil dipinjam!');
   } catch (error) {
-    if (error.code === "permission-denied" || (error.message && error.message.includes('Missing or insufficient permissions'))) {
+    // --- PENINGKATAN HANDLING 404 ---
+    if (
+      error.code === "not-found" ||
+      (error.message && error.message.toLowerCase().indexOf("404") !== -1) ||
+      (error.message && error.message.toLowerCase().indexOf("not found") !== -1)
+    ) {
+      showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: Data Firestore tidak ditemukan.<br>Pastikan koleksi <b>buku</b> dan <b>peminjaman</b> sudah ada, dan path koleksi di kode sudah benar.');
+      await fetchBuku();
+    } else if (error.code === "permission-denied" || (error.message && error.message.includes('Missing or insufficient permissions'))) {
       showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: Izin Firestore kurang. Cek rules Firestore.');
     } else {
       showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: ' + error.message);
