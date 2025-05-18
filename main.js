@@ -12,7 +12,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Admin login
 const ADMIN_EMAIL = "admin@domain.com";
 const adminMenu = document.getElementById("adminMenu");
 const adminSection = document.getElementById("adminSection");
@@ -23,7 +22,55 @@ const modalLogin = document.getElementById("modalLogin");
 const closeLoginModal = document.getElementById("closeLoginModal");
 let adminUser = null;
 
-// Admin login modal
+// --- Utility Functions ---
+function formatTanggal(tgl) {
+  if (!tgl) return '';
+  if (typeof tgl === "object" && tgl.toDate) tgl = tgl.toDate();
+  const d = new Date(tgl);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => el.innerHTML = "", 2600);
+}
+function showLoading(btn, state = true) {
+  if (!btn) return;
+  btn.disabled = state;
+  if (state) {
+    btn.dataset.original = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Loading...`;
+  } else {
+    btn.innerHTML = btn.dataset.original || btn.innerHTML;
+  }
+}
+function isValidBuku(data) {
+  if (!data.judul || !data.pengarang || !data.kategori) return false;
+  if (!data.tahun || isNaN(Number(data.tahun)) || data.tahun < 1900 || data.tahun > (new Date().getFullYear() + 1)) return false;
+  if (!data.isbn || data.isbn.length < 7) return false;
+  return true;
+}
+function isValidPinjam(nama, idPeminjam, bukuToPinjam, tglPinjam, tglKembali) {
+  if (!nama || !idPeminjam || !tglPinjam || !tglKembali) return false;
+  if (!Array.isArray(bukuToPinjam) || bukuToPinjam.length === 0) return false;
+  return true;
+}
+function calculateDenda(tglKembali, tglKembaliAsli) {
+  if (!tglKembali || !tglKembaliAsli) return { denda: 0, hariTelat: 0 };
+  const tglTarget = new Date(tglKembali);
+  const tglAsli = new Date(tglKembaliAsli);
+  const hariTelat = Math.floor((tglAsli - tglTarget) / (1000 * 60 * 60 * 24));
+  const denda = hariTelat > 0 ? hariTelat * 5000 : 0;
+  return { denda, hariTelat };
+}
+
+// --- Admin Login ---
 loginBtn.onclick = function() {
   modalLogin.classList.add("show");
 };
@@ -70,7 +117,7 @@ auth.onAuthStateChanged(function(user){
   }
 });
 
-// PATCH: Tambahkan lebih banyak dummy buku yang tersedia untuk dipinjam
+// --- Dummy Data ---
 const DUMMY_BUKU = [
   {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
   {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
@@ -88,7 +135,6 @@ const DUMMY_BUKU = [
   {judul:"A History of Modern Indonesia",pengarang:"Adrian Vickers",tahun:2005,kategori:"Sejarah",isbn:"9780521833992"},
   {judul:"Indonesia Etc.",pengarang:"Elizabeth Pisani",tahun:2014,kategori:"Sejarah",isbn:"9780393079974"},
   {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"},
-  // PENINGKATAN: Tambahan buku baru berbagai kategori
   {judul:"Negeri 5 Menara",pengarang:"Ahmad Fuadi",tahun:2009,kategori:"Fiksi",isbn:"9789791100455"},
   {judul:"Rectoverso",pengarang:"Dee Lestari",tahun:2008,kategori:"Fiksi",isbn:"9789792214847"},
   {judul:"Deep Work",pengarang:"Cal Newport",tahun:2016,kategori:"Non-Fiksi",isbn:"9786026383072"},
@@ -104,98 +150,120 @@ const DUMMY_BUKU = [
   {judul:"The Code Book",pengarang:"Simon Singh",tahun:1999,kategori:"Teknologi",isbn:"9780385495325"},
   {judul:"Digital Minimalism",pengarang:"Cal Newport",tahun:2019,kategori:"Non-Fiksi",isbn:"9780525536512"}
 ];
-
 // PATCH: Tambah buku dummy ke Firestore jika koleksi buku kosong
 async function seedDummyBooksIfNeeded() {
-  let snapshot = await db.collection("buku").get();
+  let snapshot = await db.collection("buku").limit(1).get();
   if (snapshot.empty) {
     for (const d of DUMMY_BUKU) {
-      await db.collection("buku").add({ ...d, status: "tersedia" });
+      try {
+        await db.collection("buku").add({ ...d, status: "tersedia" });
+      } catch (err) {
+        console.error("Error seeding dummy:", err);
+      }
     }
   }
 }
-
-// PATCH: Tombol admin untuk seed dummy kapan saja
 window.tambahDummyBuku = async function() {
   if (!confirm("Tambah semua buku dummy ke koleksi buku?")) return;
   for (const d of DUMMY_BUKU) {
-    await db.collection("buku").add({ ...d, status: "tersedia" });
+    try {
+      await db.collection("buku").add({ ...d, status: "tersedia" });
+    } catch (err) {
+      showAlert("alertAdmin", "danger", "Gagal tambah buku dummy: " + err.message);
+      return;
+    }
   }
   showAlert("alertAdmin", "success", "Buku dummy berhasil ditambahkan ke Firestore!");
   renderAdminBuku();
   fetchBuku();
 };
 
-// Admin buku
+// --- Admin Buku CRUD ---
 async function renderAdminBuku() {
-  let snapshot = await db.collection("buku").get();
-  let bukuList = [];
-  snapshot.forEach(doc => bukuList.push({ id: doc.id, ...doc.data() }));
-  const tbody = document.getElementById("adminDaftarBuku");
-  tbody.innerHTML = "";
-  bukuList.forEach(buku => {
-    tbody.innerHTML += `<tr>
-      <td>${buku.judul}</td>
-      <td>${buku.pengarang}</td>
-      <td>${buku.tahun}</td>
-      <td>${buku.kategori}</td>
-      <td>${buku.isbn}</td>
-      <td>
-        ${buku.status === "dipinjam" ? "<span style='color:red'>Dipinjam</span>" : 
-          buku.status === "tersedia" ? "<span style='color:green'>Tersedia</span>" : 
-          "<span style='color:#888'>Tidak Tersedia</span>"
-        }
-      </td>
-      <td>
-        <button class="btn-admin edit" onclick="editBukuAdmin('${buku.id}')">Edit</button>
-        <button class="btn-admin" style="background:#f87171;color:#fff;" onclick="hapusBukuAdmin('${buku.id}')">Hapus</button>
-      </td>
-    </tr>`;
-  });
-  fetchBuku();
+  try {
+    let snapshot = await db.collection("buku").get();
+    let bukuList = [];
+    snapshot.forEach(doc => bukuList.push({ id: doc.id, ...doc.data() }));
+    const tbody = document.getElementById("adminDaftarBuku");
+    tbody.innerHTML = "";
+    bukuList.forEach(buku => {
+      tbody.innerHTML += `<tr>
+        <td>${buku.judul}</td>
+        <td>${buku.pengarang}</td>
+        <td>${buku.tahun}</td>
+        <td>${buku.kategori}</td>
+        <td>${buku.isbn}</td>
+        <td>
+          ${buku.status === "dipinjam" ? "<span style='color:red'>Dipinjam</span>" : 
+            buku.status === "tersedia" ? "<span style='color:green'>Tersedia</span>" : 
+            "<span style='color:#888'>Tidak Tersedia</span>"
+          }
+        </td>
+        <td>
+          <button class="btn-admin edit" onclick="editBukuAdmin('${buku.id}')">Edit</button>
+          <button class="btn-admin" style="background:#f87171;color:#fff;" onclick="hapusBukuAdmin('${buku.id}')">Hapus</button>
+        </td>
+      </tr>`;
+    });
+    fetchBuku();
+  } catch (err) {
+    showAlert("alertAdmin", "danger", "Gagal memuat daftar buku admin: " + err.message);
+  }
 }
 const formTambahBuku = document.getElementById("formTambahBuku");
 formTambahBuku.onsubmit = async function(e){
   e.preventDefault();
   const idEdit = document.getElementById("bukuIdEdit").value;
   const data = {
-    judul: document.getElementById("judulBuku").value,
-    pengarang: document.getElementById("pengarangBuku").value,
+    judul: document.getElementById("judulBuku").value.trim(),
+    pengarang: document.getElementById("pengarangBuku").value.trim(),
     tahun: parseInt(document.getElementById("tahunBuku").value),
-    kategori: document.getElementById("kategoriBuku").value,
-    isbn: document.getElementById("isbnBuku").value,
+    kategori: document.getElementById("kategoriBuku").value.trim(),
+    isbn: document.getElementById("isbnBuku").value.trim(),
     status: "tersedia"
   };
-  if (idEdit) {
-    let bukuDoc = await db.collection("buku").doc(idEdit).get();
-    if (bukuDoc.exists && bukuDoc.data().status) {
-      data.status = bukuDoc.data().status;
-    }
-    await db.collection("buku").doc(idEdit).set(data);
-    showAlert("alertAdmin","success","Buku berhasil diupdate!");
-  } else {
-    await db.collection("buku").add(data);
-    showAlert("alertAdmin","success","Buku berhasil ditambahkan!");
+  if (!isValidBuku(data)) {
+    showAlert("alertAdmin", "danger", "Data buku tidak valid!");
+    return;
   }
-  formTambahBuku.reset();
-  document.getElementById("btnSubmitBuku").textContent = "Tambah Buku";
-  document.getElementById("btnBatalEdit").style.display = "none";
-  document.getElementById("bukuIdEdit").value = "";
-  renderAdminBuku();
-  fetchBuku();
+  try {
+    if (idEdit) {
+      let bukuDoc = await db.collection("buku").doc(idEdit).get();
+      if (bukuDoc.exists && bukuDoc.data().status) {
+        data.status = bukuDoc.data().status;
+      }
+      await db.collection("buku").doc(idEdit).set(data);
+      showAlert("alertAdmin","success","Buku berhasil diupdate!");
+    } else {
+      await db.collection("buku").add(data);
+      showAlert("alertAdmin","success","Buku berhasil ditambahkan!");
+    }
+    formTambahBuku.reset();
+    document.getElementById("btnSubmitBuku").textContent = "Tambah Buku";
+    document.getElementById("btnBatalEdit").style.display = "none";
+    document.getElementById("bukuIdEdit").value = "";
+    renderAdminBuku();
+    fetchBuku();
+  } catch (err) {
+    showAlert("alertAdmin", "danger", "Gagal menyimpan buku: " + err.message);
+  }
 };
 window.editBukuAdmin = async function(id){
-  let doc = await db.collection("buku").doc(id).get();
-  if (!doc.exists) return;
-  let b = doc.data();
-  document.getElementById("judulBuku").value = b.judul;
-  document.getElementById("pengarangBuku").value = b.pengarang;
-  document.getElementById("tahunBuku").value = b.tahun;
-  document.getElementById("kategoriBuku").value = b.kategori;
-  document.getElementById("isbnBuku").value = b.isbn;
-  document.getElementById("bukuIdEdit").value = id;
-  document.getElementById("btnSubmitBuku").textContent = "Update Buku";
-  document.getElementById("btnBatalEdit").style.display = "";
+  try {
+    let doc = await db.collection("buku").doc(id).get();
+    if (!doc.exists) return;
+    let b = doc.data();
+    document.getElementById("judulBuku").value = b.judul;
+    document.getElementById("pengarangBuku").value = b.pengarang;
+    document.getElementById("tahunBuku").value = b.tahun;
+    document.getElementById("kategoriBuku").value = b.kategori;
+    document.getElementById("isbnBuku").value = b.isbn;
+    document.getElementById("bukuIdEdit").value = id;
+    document.getElementById("btnSubmitBuku").textContent = "Update Buku";
+    document.getElementById("btnBatalEdit").style.display = "";
+  } catch (err) {
+    showAlert("alertAdmin", "danger", "Gagal muat data buku: " + err.message);
+  }
 };
 document.getElementById("btnBatalEdit").onclick = function(){
   formTambahBuku.reset();
@@ -205,17 +273,21 @@ document.getElementById("btnBatalEdit").onclick = function(){
 };
 window.hapusBukuAdmin = async function(id){
   if (!confirm("Yakin hapus buku ini?")) return;
-  await db.collection("buku").doc(id).delete();
-  let snapshot = await db.collection("peminjaman").where("bukuId","==",id).get();
-  let batch = db.batch();
-  snapshot.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  showAlert("alertAdmin","success","Buku & riwayat pinjamnya berhasil dihapus!");
-  renderAdminBuku();
-  fetchBuku();
+  try {
+    await db.collection("buku").doc(id).delete();
+    let snapshot = await db.collection("peminjaman").where("bukuId","==",id).get();
+    let batch = db.batch();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    showAlert("alertAdmin","success","Buku & riwayat pinjamnya berhasil dihapus!");
+    renderAdminBuku();
+    fetchBuku();
+  } catch (err) {
+    showAlert("alertAdmin", "danger", "Gagal hapus buku: " + err.message);
+  }
 };
 
-// Koleksi Buku
+// --- Koleksi Buku dan Rendering Grid/Select/Multi ---
 let semuaBuku = [];
 let filterKategori = "Semua";
 let dummySeeded = false;
@@ -240,57 +312,6 @@ async function fetchBuku() {
     showAlert('alertPinjam', 'danger', 'Gagal memuat daftar buku');
   }
 }
-
-// Update judul buku terpilih
-function updateJudulBukuTerpilih() {
-  const select = document.getElementById('bukuDipinjam');
-  const judulDiv = document.getElementById('judulBukuTerpilih');
-  if (!select || !judulDiv) return;
-  const selectedValue = select.value;
-  if (!selectedValue) {
-    judulDiv.textContent = "";
-    return;
-  }
-  const buku = window.semuaBuku.find(b => b.id === selectedValue);
-  if (buku) {
-    judulDiv.textContent = `Judul: ${buku.judul}${buku.isbn ? ` (ISBN: ${buku.isbn})` : ''}`;
-  } else {
-    judulDiv.textContent = "";
-  }
-}
-
-// Multi Select Buku Pinjam
-function renderMultiBukuPinjam() {
-  const multiBukuDiv = document.getElementById('multiBukuDipinjam');
-  if (!multiBukuDiv) return;
-  const availableBooks = semuaBuku.filter(b => !b.id.startsWith('dummy-') && b.status === "tersedia");
-  if (availableBooks.length === 0) {
-    multiBukuDiv.innerHTML = "<div class='alert alert-warning'>Tidak ada buku yang tersedia untuk dipinjam.</div>";
-    return;
-  }
-  multiBukuDiv.innerHTML = `
-    <label for="multiBukuSelect"><b>Pilih Buku yang akan Dipinjam (bisa lebih dari satu):</b></label>
-    <select id="multiBukuSelect" multiple size="6" style="width:100%;margin-bottom:7px;">
-      ${availableBooks.map(b => `<option value="${b.id}">${b.judul}${b.isbn ? ` (${b.isbn})` : ''}</option>`).join('')}
-    </select>
-    <div id="multiJudulBukuTerpilih" class="text-muted" style="margin-bottom: 7px;"></div>
-  `;
-  const multiSelect = document.getElementById('multiBukuSelect');
-  const multiJudulDiv = document.getElementById('multiJudulBukuTerpilih');
-  multiSelect.addEventListener('change', function() {
-    const ids = Array.from(this.selectedOptions).map(opt => opt.value);
-    if (ids.length === 0) {
-      multiJudulDiv.textContent = "";
-    } else {
-      multiJudulDiv.innerHTML = "Dipilih: <br>" + ids.map(id => {
-        const buku = semuaBuku.find(b => b.id === id);
-        return buku ? `• ${buku.judul}${buku.isbn ? ` (ISBN: ${buku.isbn})` : ''}` : '';
-      }).join('<br>');
-    }
-  });
-}
-
-// Render grid koleksi buku
 function renderBukuGrid() {
   const daftarBuku = document.getElementById('daftarBuku');
   if (!daftarBuku) return;
@@ -335,8 +356,6 @@ function renderBukuGrid() {
     });
   });
 }
-
-// Kategori filter event
 document.querySelectorAll('.kategori-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.kategori-btn').forEach(b => b.classList.remove('active'));
@@ -345,8 +364,6 @@ document.querySelectorAll('.kategori-btn').forEach(btn => {
     renderBukuGrid();
   });
 });
-
-// Render select buku pada form pinjam (single)
 function renderBukuSelect() {
   const bukuDipinjam = document.getElementById('bukuDipinjam');
   if (!bukuDipinjam) return;
@@ -371,11 +388,54 @@ function renderBukuSelect() {
   }
   bukuDipinjam.dispatchEvent(new Event('change'));
 }
+function renderMultiBukuPinjam() {
+  const multiBukuDiv = document.getElementById('multiBukuDipinjam');
+  if (!multiBukuDiv) return;
+  const availableBooks = semuaBuku.filter(b => !b.id.startsWith('dummy-') && b.status === "tersedia");
+  if (availableBooks.length === 0) {
+    multiBukuDiv.innerHTML = "<div class='alert alert-warning'>Tidak ada buku yang tersedia untuk dipinjam.</div>";
+    return;
+  }
+  multiBukuDiv.innerHTML = `
+    <label for="multiBukuSelect"><b>Pilih Buku yang akan Dipinjam (bisa lebih dari satu):</b></label>
+    <select id="multiBukuSelect" multiple size="6" style="width:100%;margin-bottom:7px;">
+      ${availableBooks.map(b => `<option value="${b.id}">${b.judul}${b.isbn ? ` (${b.isbn})` : ''}</option>`).join('')}
+    </select>
+    <div id="multiJudulBukuTerpilih" class="text-muted" style="margin-bottom: 7px;"></div>
+  `;
+  const multiSelect = document.getElementById('multiBukuSelect');
+  const multiJudulDiv = document.getElementById('multiJudulBukuTerpilih');
+  multiSelect.addEventListener('change', function() {
+    const ids = Array.from(this.selectedOptions).map(opt => opt.value);
+    if (ids.length === 0) {
+      multiJudulDiv.textContent = "";
+    } else {
+      multiJudulDiv.innerHTML = "Dipilih: <br>" + ids.map(id => {
+        const buku = semuaBuku.find(b => b.id === id);
+        return buku ? `• ${buku.judul}${buku.isbn ? ` (ISBN: ${buku.isbn})` : ''}` : '';
+      }).join('<br>');
+    }
+  });
+}
+function updateJudulBukuTerpilih() {
+  const select = document.getElementById('bukuDipinjam');
+  const judulDiv = document.getElementById('judulBukuTerpilih');
+  if (!select || !judulDiv) return;
+  const selectedValue = select.value;
+  if (!selectedValue) {
+    judulDiv.textContent = "";
+    return;
+  }
+  const buku = window.semuaBuku.find(b => b.id === selectedValue);
+  if (buku) {
+    judulDiv.textContent = `Judul: ${buku.judul}${buku.isbn ? ` (ISBN: ${buku.isbn})` : ''}`;
+  } else {
+    judulDiv.textContent = "";
+  }
+}
 
-// Peminjaman
+// --- Peminjaman ---
 let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam") || "[]");
-
-// Submit form pinjam
 document.getElementById('formPinjam').addEventListener('submit', async function(e) {
   e.preventDefault();
   const nama = document.getElementById('namaPeminjam').value.trim();
@@ -383,24 +443,31 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
   const bukuIdSingle = document.getElementById('bukuDipinjam').value;
   const tglPinjam = document.getElementById('tglPinjam').value;
   const tglKembali = document.getElementById('tglKembali').value;
-
-  // Multi select
+  const btn = this.querySelector('button[type="submit"]');
   const multiSelect = document.getElementById('multiBukuSelect');
   let bukuIds = [];
   if (multiSelect) {
     bukuIds = Array.from(multiSelect.selectedOptions).map(opt => opt.value);
   }
   let bukuToPinjam = bukuIds.length > 0 ? bukuIds : (bukuIdSingle ? [bukuIdSingle] : []);
-  if (bukuToPinjam.length === 0) {
-    showAlert('alertPinjam', 'danger', 'Buku wajib dipilih!');
+  if (!isValidPinjam(nama, idPeminjam, bukuToPinjam, tglPinjam, tglKembali)) {
+    showAlert('alertPinjam', 'danger', 'Semua field wajib diisi & buku harus dipilih!');
     return;
   }
-  let notFound = false, dummyFound = false, alreadyPinjam = false, notAvailable = false, bukuDatas = [];
+  showLoading(btn, true);
+  let notFound = false, dummyFound = false, notAvailable = false, bukuDatas = [];
   for (let bid of bukuToPinjam) {
     const localBuku = semuaBuku.find(b => b.id === bid);
     if (!localBuku) { notFound = true; continue; }
     if (localBuku.id.startsWith('dummy-')) { dummyFound = true; continue; }
-    let doc = await db.collection("buku").doc(bid).get();
+    let doc;
+    try {
+      doc = await db.collection("buku").doc(bid).get();
+    } catch (err) {
+      showAlert('alertPinjam', 'danger', 'Gagal cek buku: ' + err.message);
+      showLoading(btn, false);
+      return;
+    }
     if (!doc.exists) { notFound = true; continue; }
     let b = doc.data();
     if (b.status !== "tersedia") { notAvailable = true; continue; }
@@ -408,15 +475,18 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
   }
   if (notFound) {
     showAlert('alertPinjam', 'danger', 'Salah satu buku tidak ditemukan!');
+    showLoading(btn, false);
     return;
   }
   if (dummyFound) {
     showAlert('alertPinjam', 'danger', 'Buku demo tidak bisa dipinjam!');
+    showLoading(btn, false);
     return;
   }
   if (notAvailable) {
     showAlert('alertPinjam', 'danger', 'Ada buku yang tidak tersedia atau sedang dipinjam!');
     await fetchBuku();
+    showLoading(btn, false);
     return;
   }
   try {
@@ -426,7 +496,8 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
       const data = {
         nama, idPeminjam,
         bukuId: buku.id,
-        tglPinjam, tglKembali,
+        tglPinjam: new Date(tglPinjam),
+        tglKembali: new Date(tglKembali),
         judul: buku.judul,
         pengarang: buku.pengarang,
         kategori: buku.kategori,
@@ -455,29 +526,18 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
     renderMultiBukuPinjam();
     showAlert('alertPinjam', 'success', 'Buku berhasil dipinjam!');
   } catch (error) {
+    if (error.message && error.message.includes('Missing or insufficient permissions')) {
+      showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: Anda tidak punya izin. Hubungi admin.');
+    } else {
+      showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: ' + error.message);
+    }
     console.error("Error borrowing books:", error);
-    showAlert('alertPinjam', 'danger', 'Gagal meminjam buku');
+  } finally {
+    showLoading(btn, false);
   }
 });
 
-// Fungsi untuk menampilkan alert
-function showAlert(id, type, msg) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-  setTimeout(() => el.innerHTML = "", 2300);
-}
-
-// Hitung denda
-function hitungDenda(tglKembali, tglKembaliAsli) {
-  if (!tglKembali || !tglKembaliAsli) return 0;
-  const tglTarget = new Date(tglKembali);
-  const tglAsli = new Date(tglKembaliAsli);
-  const hariTelat = Math.floor((tglAsli - tglTarget) / (1000 * 60 * 60 * 24));
-  return hariTelat > 0 ? hariTelat * 5000 : 0;
-}
-
-// Render riwayat
+// --- Riwayat, Struk, dan Modal ---
 function renderRiwayat() {
   const el = document.getElementById('riwayatTabel');
   if (!el) return;
@@ -515,15 +575,11 @@ function renderRiwayat() {
   `;
   el.innerHTML = html;
 }
-
-// Tampilkan struk berdasarkan index
 window.showStrukPinjamByIndex = function(index) {
   if (index >= 0 && index < pinjamList.length) {
     showStrukPinjam(pinjamList[index]);
   }
 };
-
-// Tampilkan struk peminjaman
 function showStrukPinjam(data) {
   const tglKembaliAsli = data.tglKembaliAsli || null;
   const { denda, hariTelat } = calculateDenda(data.tglKembali, tglKembaliAsli);
@@ -550,7 +606,6 @@ function showStrukPinjam(data) {
   document.getElementById('isiStruk').innerHTML = strukContent;
   document.getElementById('modalStruk').classList.add('show');
 }
-
 function showStrukPinjamMulti(datas, tglPinjam, tglKembali) {
   let strukContent = `
     <div class="invoice-struk">
@@ -576,41 +631,16 @@ function showStrukPinjamMulti(datas, tglPinjam, tglKembali) {
   document.getElementById('isiStruk').innerHTML = strukContent;
   document.getElementById('modalStruk').classList.add('show');
 }
-
-function calculateDenda(tglKembali, tglKembaliAsli) {
-  if (!tglKembali || !tglKembaliAsli) return { denda: 0, hariTelat: 0 };
-  const tglTarget = new Date(tglKembali);
-  const tglAsli = new Date(tglKembaliAsli);
-  const hariTelat = Math.floor((tglAsli - tglTarget) / (1000 * 60 * 60 * 24));
-  const denda = hariTelat > 0 ? hariTelat * 5000 : 0;
-  return { denda, hariTelat };
-}
-
-// Tutup modal struk
 document.getElementById('closeModal').addEventListener('click', () => {
   document.getElementById('modalStruk').classList.remove('show');
 });
-// Tutup modal saat klik di luar
 window.addEventListener('click', function(event) {
   if (event.target === document.getElementById('modalStruk')) {
     document.getElementById('modalStruk').classList.remove('show');
   }
 });
 
-// Format tanggal
-function formatTanggal(tgl) {
-  if (!tgl) return '';
-  if (typeof tgl === "object" && tgl.toDate) tgl = tgl.toDate();
-  const d = new Date(tgl);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
-}
-
-// Panel admin: daftar peminjaman
+// --- Panel admin: daftar peminjaman ---
 async function renderAdminPeminjaman() {
   const el = document.getElementById("adminDaftarPeminjaman");
   if (!el) return;
@@ -668,8 +698,6 @@ async function renderAdminPeminjaman() {
     el.innerHTML = "<div class='text-danger'>Gagal memuat data peminjaman</div>";
   }
 }
-
-// Fungsi admin konfirmasi pengembalian
 window.pengembalianBuku = async function(peminjamanId, bukuId, tglKembali) {
   if (!confirm("Konfirmasi pengembalian buku?")) return;
   try {
@@ -683,12 +711,11 @@ window.pengembalianBuku = async function(peminjamanId, bukuId, tglKembali) {
     renderAdminPeminjaman();
     fetchBuku();
   } catch (error) {
-    console.error("Error returning book:", error);
-    showAlert("alertAdmin", "danger", "Gagal mengkonfirmasi pengembalian");
+    showAlert("alertAdmin", "danger", "Gagal mengkonfirmasi pengembalian: " + error.message);
   }
 };
 
-// Inisialisasi saat DOM ready
+// --- Inisialisasi saat DOM ready ---
 document.addEventListener("DOMContentLoaded", function() {
   const select = document.getElementById('bukuDipinjam');
   if (select) {
@@ -709,7 +736,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 });
 
-// Fungsi pinjam buku dari tombol di grid (pilih & highlight di select)
+// --- Fungsi pinjam buku dari tombol di grid (pilih & highlight di select) ---
 function handlePinjamBuku(bukuId) {
   if (bukuId.startsWith('dummy-')) {
     alert('Buku ini hanya untuk demo. Silakan login admin untuk menambah buku asli.');
@@ -724,7 +751,6 @@ function handlePinjamBuku(bukuId) {
     showAlert('alertPinjam', 'danger', 'Buku sedang dipinjam atau tidak tersedia!');
     return;
   }
-  // Tambahkan ke multi select jika ada
   const multiSelect = document.getElementById('multiBukuSelect');
   if (multiSelect) {
     for (let i = 0; i < multiSelect.options.length; i++) {
@@ -737,7 +763,6 @@ function handlePinjamBuku(bukuId) {
     document.getElementById('formPinjamSection').scrollIntoView({behavior: "smooth"});
     return;
   }
-  // Jika tidak ada multi, fallback ke single select
   const select = document.getElementById('bukuDipinjam');
   select.value = bukuId;
   select.classList.add('highlighted');
