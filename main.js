@@ -1,4 +1,4 @@
-// Firebase config dan inisialisasi
+// --- Konfigurasi dan Inisialisasi Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
   authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
@@ -8,18 +8,15 @@ const firebaseConfig = {
   appId: "1:272079716908:web:f621036e0be69ef4ab4789",
   measurementId: "G-QR79PE11PS"
 };
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+} else {
+  firebase.app();
+}
 const db = firebase.firestore();
 const auth = firebase.auth();
 
 const ADMIN_EMAIL = "admin@domain.com";
-const adminMenu = document.getElementById("adminMenu");
-const adminSection = document.getElementById("adminSection");
-const adminEmailShow = document.getElementById("adminEmailShow");
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const modalLogin = document.getElementById("modalLogin");
-const closeLoginModal = document.getElementById("closeLoginModal");
 let adminUser = null;
 
 // --- Utility Functions ---
@@ -29,9 +26,7 @@ function formatTanggal(tgl) {
   const d = new Date(tgl);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
+    day: '2-digit', month: 'long', year: 'numeric'
   });
 }
 function showAlert(id, type, msg) {
@@ -71,6 +66,14 @@ function calculateDenda(tglKembali, tglKembaliAsli) {
 }
 
 // --- Admin Login ---
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const modalLogin = document.getElementById("modalLogin");
+const closeLoginModal = document.getElementById("closeLoginModal");
+const adminMenu = document.getElementById("adminMenu");
+const adminSection = document.getElementById("adminSection");
+const adminEmailShow = document.getElementById("adminEmailShow");
+
 loginBtn.onclick = function() {
   modalLogin.classList.add("show");
 };
@@ -422,7 +425,6 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
   const bukuIdSingle = document.getElementById('bukuDipinjam').value;
   const tglPinjamStr = document.getElementById('tglPinjam').value;
   const tglKembaliStr = document.getElementById('tglKembali').value;
-  // Pastikan tanggal valid
   const tglPinjam = tglPinjamStr ? new Date(tglPinjamStr) : new Date();
   const tglKembali = tglKembaliStr ? new Date(tglKembaliStr) : new Date(Date.now() + 7*24*60*60*1000);
   const btn = this.querySelector('button[type="submit"]');
