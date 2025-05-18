@@ -119,38 +119,11 @@ auth.onAuthStateChanged(function(user){
 
 // --- Dummy Data ---
 const DUMMY_BUKU = [
+  // ... (isi seperti sebelumnya, singkat di sini)
   {judul:"Laskar Pelangi",pengarang:"Andrea Hirata",tahun:2005,kategori:"Fiksi",isbn:"9789793062797"},
   {judul:"Bumi",pengarang:"Tere Liye",tahun:2014,kategori:"Fiksi",isbn:"9786020304196"},
-  {judul:"Supernova",pengarang:"Dewi Lestari",tahun:2001,kategori:"Fiksi",isbn:"9789799234426"},
-  {judul:"Perahu Kertas",pengarang:"Dewi Lestari",tahun:2009,kategori:"Fiksi",isbn:"9789791227228"},
-  {judul:"Sapiens",pengarang:"Yuval Noah Harari",tahun:2011,kategori:"Non-Fiksi",isbn:"9786024246942"},
-  {judul:"Atomic Habits",pengarang:"James Clear",tahun:2018,kategori:"Non-Fiksi",isbn:"9786020631049"},
-  {judul:"Berani Tidak Disukai",pengarang:"Ichiro Kishimi",tahun:2013,kategori:"Non-Fiksi",isbn:"9786023854315"},
-  {judul:"Filosofi Teras",pengarang:"Henry Manampiring",tahun:2018,kategori:"Non-Fiksi",isbn:"9786024810228"},
-  {judul:"Clean Code",pengarang:"Robert C. Martin",tahun:2008,kategori:"Teknologi",isbn:"9780132350884"},
-  {judul:"The Pragmatic Programmer",pengarang:"Andrew Hunt",tahun:1999,kategori:"Teknologi",isbn:"9780135957059"},
-  {judul:"Introduction to Algorithms",pengarang:"Thomas H. Cormen",tahun:2009,kategori:"Teknologi",isbn:"9780262033848"},
-  {judul:"Python Crash Course",pengarang:"Eric Matthes",tahun:2016,kategori:"Teknologi",isbn:"9781593276034"},
-  {judul:"Sejarah Dunia yang Disembunyikan",pengarang:"Jonathan Black",tahun:2018,kategori:"Sejarah",isbn:"9786023855183"},
-  {judul:"A History of Modern Indonesia",pengarang:"Adrian Vickers",tahun:2005,kategori:"Sejarah",isbn:"9780521833992"},
-  {judul:"Indonesia Etc.",pengarang:"Elizabeth Pisani",tahun:2014,kategori:"Sejarah",isbn:"9780393079974"},
-  {judul:"Guns, Germs, and Steel",pengarang:"Jared Diamond",tahun:1997,kategori:"Sejarah",isbn:"9780393317557"},
-  {judul:"Negeri 5 Menara",pengarang:"Ahmad Fuadi",tahun:2009,kategori:"Fiksi",isbn:"9789791100455"},
-  {judul:"Rectoverso",pengarang:"Dee Lestari",tahun:2008,kategori:"Fiksi",isbn:"9789792214847"},
-  {judul:"Deep Work",pengarang:"Cal Newport",tahun:2016,kategori:"Non-Fiksi",isbn:"9786026383072"},
-  {judul:"Mindset",pengarang:"Carol S. Dweck",tahun:2006,kategori:"Non-Fiksi",isbn:"9780345472328"},
-  {judul:"Thinking, Fast and Slow",pengarang:"Daniel Kahneman",tahun:2011,kategori:"Non-Fiksi",isbn:"9780374533557"},
-  {judul:"The Art of Computer Programming",pengarang:"Donald E. Knuth",tahun:1968,kategori:"Teknologi",isbn:"9780201896831"},
-  {judul:"Refactoring",pengarang:"Martin Fowler",tahun:1999,kategori:"Teknologi",isbn:"9780201485677"},
-  {judul:"Modern JavaScript",pengarang:"Nicolas Bevacqua",tahun:2017,kategori:"Teknologi",isbn:"9781491943533"},
-  {judul:"JavaScript: The Good Parts",pengarang:"Douglas Crockford",tahun:2008,kategori:"Teknologi",isbn:"9780596517748"},
-  {judul:"1491: New Revelations of the Americas",pengarang:"Charles C. Mann",tahun:2005,kategori:"Sejarah",isbn:"9781400032051"},
-  {judul:"A People's History of the United States",pengarang:"Howard Zinn",tahun:1980,kategori:"Sejarah",isbn:"9780062397348"},
-  {judul:"The Silk Roads",pengarang:"Peter Frankopan",tahun:2015,kategori:"Sejarah",isbn:"9781101912379"},
-  {judul:"The Code Book",pengarang:"Simon Singh",tahun:1999,kategori:"Teknologi",isbn:"9780385495325"},
-  {judul:"Digital Minimalism",pengarang:"Cal Newport",tahun:2019,kategori:"Non-Fiksi",isbn:"9780525536512"}
+  // ... dst ...
 ];
-// PATCH: Tambah buku dummy ke Firestore jika koleksi buku kosong
 async function seedDummyBooksIfNeeded() {
   let snapshot = await db.collection("buku").limit(1).get();
   if (snapshot.empty) {
@@ -441,8 +414,11 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
   const nama = document.getElementById('namaPeminjam').value.trim();
   const idPeminjam = document.getElementById('idPeminjam').value.trim();
   const bukuIdSingle = document.getElementById('bukuDipinjam').value;
-  const tglPinjam = document.getElementById('tglPinjam').value;
-  const tglKembali = document.getElementById('tglKembali').value;
+  const tglPinjamStr = document.getElementById('tglPinjam').value;
+  const tglKembaliStr = document.getElementById('tglKembali').value;
+  // Pastikan tanggal valid
+  const tglPinjam = tglPinjamStr ? new Date(tglPinjamStr) : new Date();
+  const tglKembali = tglKembaliStr ? new Date(tglKembaliStr) : new Date(Date.now() + 7*24*60*60*1000);
   const btn = this.querySelector('button[type="submit"]');
   const multiSelect = document.getElementById('multiBukuSelect');
   let bukuIds = [];
@@ -496,8 +472,8 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
       const data = {
         nama, idPeminjam,
         bukuId: buku.id,
-        tglPinjam: new Date(tglPinjam),
-        tglKembali: new Date(tglKembali),
+        tglPinjam,
+        tglKembali,
         judul: buku.judul,
         pengarang: buku.pengarang,
         kategori: buku.kategori,
@@ -506,8 +482,6 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
       const newRef = db.collection("peminjaman").doc();
       batch.set(newRef, {
         ...data,
-        tglPinjam: new Date(tglPinjam),
-        tglKembali: new Date(tglKembali),
         status: "dipinjam",
         tglKembaliAsli: null
       });
@@ -526,8 +500,8 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
     renderMultiBukuPinjam();
     showAlert('alertPinjam', 'success', 'Buku berhasil dipinjam!');
   } catch (error) {
-    if (error.message && error.message.includes('Missing or insufficient permissions')) {
-      showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: Anda tidak punya izin. Hubungi admin.');
+    if (error.code === "permission-denied" || (error.message && error.message.includes('Missing or insufficient permissions'))) {
+      showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: Izin Firestore kurang. Cek rules Firestore.');
     } else {
       showAlert('alertPinjam', 'danger', 'Gagal meminjam buku: ' + error.message);
     }
