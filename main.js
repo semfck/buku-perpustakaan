@@ -561,7 +561,8 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
         status: "dipinjam",
         tglKembaliAsli: null
       };
-      await db.collection("peminjaman").add(data);
+      const docRef = await db.collection("peminjaman").add(data);
+      data.docId = docRef.id; // PATCH: Simpan docId Firestore
       await db.collection("buku").doc(buku.id).update({ status: "dipinjam" });
       pinjamList.push(data);
       invoiceDetails.push(data);
@@ -633,11 +634,26 @@ function renderRiwayat() {
   `;
   el.innerHTML = html;
 }
-window.showStrukPinjamByIndex = function(index) {
+
+// --- PATCH: showStrukPinjamByIndex fetch Firestore jika ada docId ---
+window.showStrukPinjamByIndex = async function(index) {
   if (index >= 0 && index < pinjamList.length) {
-    showStrukPinjam(pinjamList[index]);
+    const item = pinjamList[index];
+    if (item.docId) {
+      try {
+        const doc = await db.collection("peminjaman").doc(item.docId).get();
+        if (doc.exists) {
+          showStrukPinjam(doc.data());
+          return;
+        }
+      } catch (err) {
+        console.error("Gagal fetch Firestore:", err);
+      }
+    }
+    showStrukPinjam(item); // fallback jika gagal
   }
 };
+
 function showStrukPinjam(data) {
   const tglKembaliAsli = data.tglKembaliAsli || null;
   const { denda, hariTelat } = calculateDenda(data.tglKembali, tglKembaliAsli);
