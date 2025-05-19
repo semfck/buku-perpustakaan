@@ -192,64 +192,6 @@ async function renderAdminBuku() {
     showAlert("alertAdmin", "danger", "Gagal memuat daftar buku admin: " + err.message);
   }
 }
-async function renderAdminPeminjaman() {
-  const el = document.getElementById("adminDaftarPeminjaman");
-  if (!el) return;
-  try {
-    const snapshot = await db.collection("peminjaman").orderBy("tglPinjam", "desc").get();
-    if (snapshot.empty) {
-      el.innerHTML = "<div class='text-muted'>Belum ada data peminjaman.</div>";
-      return;
-    }
-    const html = `
-      <table class="riwayat-tabel">
-        <thead>
-          <tr>
-            <th>Nama</th>
-            <th>ID</th>
-            <th>Buku</th>
-            <th>Tgl Pinjam</th>
-            <th>Tgl Kembali (target)</th>
-            <th>Tgl Kembali Real</th>
-            <th>Status</th>
-            <th>Denda</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${snapshot.docs.map(doc => {
-            const d = doc.data();
-            const { denda, hariTelat } = calculateDenda(d.tglKembali, d.tglKembaliAsli);
-            return `
-              <tr>
-                <td>${d.nama}</td>
-                <td>${d.idPeminjam}</td>
-                <td>${d.judul}</td>
-                <td>${formatTanggal(d.tglPinjam?.toDate?.() || d.tglPinjam)}</td>
-                <td>${formatTanggal(d.tglKembali?.toDate?.() || d.tglKembali)}</td>
-                <td>${d.tglKembaliAsli ? formatTanggal(d.tglKembaliAsli?.toDate?.() || d.tglKembaliAsli) : '-'}</td>
-                <td>${d.status || '-'}</td>
-                <td>Rp ${denda.toLocaleString("id-ID")}${hariTelat > 0 ? `<br><span class="denda-late">Terlambat ${hariTelat} hari</span>` : ''}</td>
-                <td>
-                  ${d.status === "dipinjam" ? `
-                    <button class="btn-admin btn-kembali" onclick="pengembalianBuku('${doc.id}','${d.bukuId}','${d.tglKembali}')">
-                      Konfirmasi<br>Kembali
-                    </button>
-                  ` : ''}
-                  <button class="btn-admin btn-hapus" onclick="hapusPeminjamanAdmin('${doc.id}')">Hapus</button>
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    `;
-    el.innerHTML = html;
-  } catch (error) {
-    console.error("Error loading borrow history:", error);
-    el.innerHTML = "<div class='text-danger'>Gagal memuat data peminjaman</div>";
-  }
-}
 const formTambahBuku = document.getElementById("formTambahBuku");
 formTambahBuku.onsubmit = async function(e){
   e.preventDefault();
@@ -326,6 +268,78 @@ window.hapusBukuAdmin = async function(id){
     showAlert("alertAdmin", "danger", "Gagal hapus buku: " + err.message);
   }
 };
+
+// --- Panel admin: daftar peminjaman ---
+async function renderAdminPeminjaman() {
+  const el = document.getElementById("adminDaftarPeminjaman");
+  if (!el) return;
+  try {
+    const snapshot = await db.collection("peminjaman").orderBy("tglPinjam", "desc").get();
+    if (snapshot.empty) {
+      el.innerHTML = "<div class='text-muted'>Belum ada data peminjaman.</div>";
+      return;
+    }
+    const html = `
+      <table class="riwayat-tabel">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>ID</th>
+            <th>Buku</th>
+            <th>Tgl Pinjam</th>
+            <th>Tgl Kembali (target)</th>
+            <th>Tgl Kembali Real</th>
+            <th>Status</th>
+            <th>Denda</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${snapshot.docs.map(doc => {
+            const d = doc.data();
+            const { denda, hariTelat } = calculateDenda(d.tglKembali, d.tglKembaliAsli);
+            return `
+              <tr>
+                <td>${d.nama}</td>
+                <td>${d.idPeminjam}</td>
+                <td>${d.judul}</td>
+                <td>${formatTanggal(d.tglPinjam?.toDate?.() || d.tglPinjam)}</td>
+                <td>${formatTanggal(d.tglKembali?.toDate?.() || d.tglKembali)}</td>
+                <td>${d.tglKembaliAsli ? formatTanggal(d.tglKembaliAsli?.toDate?.() || d.tglKembaliAsli) : '-'}</td>
+                <td>${d.status || '-'}</td>
+                <td>Rp ${denda.toLocaleString("id-ID")}${hariTelat > 0 ? `<br><span class="denda-late">Terlambat ${hariTelat} hari</span>` : ''}</td>
+                <td>
+                  ${d.status === "dipinjam" ? `
+                    <button class="btn-admin btn-kembali" onclick="pengembalianBuku('${doc.id}','${d.bukuId}','${d.tglKembali}')">
+                      Konfirmasi<br>Kembali
+                    </button>
+                  ` : ''}
+                  <button class="btn-admin btn-hapus" onclick="hapusPeminjamanAdmin('${doc.id}')">Hapus</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    el.innerHTML = html;
+  } catch (error) {
+    console.error("Error loading borrow history:", error);
+    el.innerHTML = "<div class='text-danger'>Gagal memuat data peminjaman</div>";
+  }
+}
+
+// --- FUNGSI BARU: Hapus Riwayat Peminjaman ---
+window.hapusPeminjamanAdmin = async function(id) {
+  if (!confirm("Yakin hapus riwayat peminjaman ini?")) return;
+  try {
+    await db.collection("peminjaman").doc(id).delete();
+    showAlert("alertAdmin", "success", "Riwayat peminjaman berhasil dihapus!");
+    renderAdminPeminjaman();
+  } catch (err) {
+    showAlert("alertAdmin", "danger", "Gagal hapus riwayat: " + err.message);
+  }
+}
 
 // --- Koleksi Buku dan Rendering Grid/Select/Multi ---
 let semuaBuku = [];
@@ -684,64 +698,7 @@ window.addEventListener('click', function(event) {
   }
 });
 
-// --- Panel admin: daftar peminjaman ---
-async function renderAdminPeminjaman() {
-  const el = document.getElementById("adminDaftarPeminjaman");
-  if (!el) return;
-  try {
-    const snapshot = await db.collection("peminjaman").orderBy("tglPinjam", "desc").get();
-    if (snapshot.empty) {
-      el.innerHTML = "<div class='text-muted'>Belum ada data peminjaman.</div>";
-      return;
-    }
-    const html = `
-      <table class="riwayat-tabel">
-        <thead>
-          <tr>
-            <th>Nama</th>
-            <th>ID</th>
-            <th>Buku</th>
-            <th>Tgl Pinjam</th>
-            <th>Tgl Kembali (target)</th>
-            <th>Tgl Kembali Real</th>
-            <th>Status</th>
-            <th>Denda</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${snapshot.docs.map(doc => {
-            const d = doc.data();
-            const { denda, hariTelat } = calculateDenda(d.tglKembali, d.tglKembaliAsli);
-            return `
-              <tr>
-                <td>${d.nama}</td>
-                <td>${d.idPeminjam}</td>
-                <td>${d.judul}</td>
-                <td>${formatTanggal(d.tglPinjam?.toDate?.() || d.tglPinjam)}</td>
-                <td>${formatTanggal(d.tglKembali?.toDate?.() || d.tglKembali)}</td>
-                <td>${d.tglKembaliAsli ? formatTanggal(d.tglKembaliAsli?.toDate?.() || d.tglKembaliAsli) : '-'}</td>
-                <td>${d.status || '-'}</td>
-                <td>Rp ${denda.toLocaleString("id-ID")}${hariTelat > 0 ? `<br><span class="denda-late">Terlambat ${hariTelat} hari</span>` : ''}</td>
-                <td>
-                  ${d.status === "dipinjam" ? `
-                    <button class="btn-admin btn-kembali" onclick="pengembalianBuku('${doc.id}','${d.bukuId}','${d.tglKembali}')">
-                      Konfirmasi<br>Kembali
-                    </button>
-                  ` : ''}
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    `;
-    el.innerHTML = html;
-  } catch (error) {
-    console.error("Error loading borrow history:", error);
-    el.innerHTML = "<div class='text-danger'>Gagal memuat data peminjaman</div>";
-  }
-}
+// --- Panel admin: pengembalian buku ---
 window.pengembalianBuku = async function(peminjamanId, bukuId, tglKembali) {
   if (!confirm("Konfirmasi pengembalian buku?")) return;
   try {

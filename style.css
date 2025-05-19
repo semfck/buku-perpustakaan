@@ -97,6 +97,21 @@ main .container {
   margin-bottom: 22px;
   margin-top: 0;
 }
+.btn-admin.btn-hapus {
+  background: linear-gradient(90deg,#f43f5e 70%,#fb7185 100%);
+  color: #fff;
+  border: none;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-weight: 500;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-admin.btn-hapus:hover {
+  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
+  color: #fff;
+}
 .filter-kategori { margin-bottom: 26px; text-align: center; }
 .kategori-btn {
   background: #edf2fb;
@@ -630,19 +645,4 @@ footer {
   .form-row { flex-direction: column; gap: 8px;}
   .hero h1 { font-size: 1.25rem; }
   #judulBukuTerpilih { font-size: .99rem;}
-}
-.btn-admin.btn-hapus {
-  background: linear-gradient(90deg,#f43f5e 70%,#fb7185 100%);
-  color: #fff;
-  border: none;
-  padding: 5px 11px;
-  border-radius: 7px;
-  font-weight: 500;
-  margin-top: 4px;
-  cursor: pointer;
-  transition: background .15s;
-}
-.btn-admin.btn-hapus:hover {
-  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
-  color: #fff;
 }
