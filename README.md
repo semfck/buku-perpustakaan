@@ -101,6 +101,9 @@ Berikut adalah tampilan utama aplikasi **Perpustakaan Digital**:
 
 ![image](https://github.com/user-attachments/assets/2a7f1383-946c-44a6-ab07-372c616a363b)
 
+### Fitur Admin
+
+![image](https://github.com/user-attachments/assets/60da4be0-06fa-42e0-98e7-be6bc0b5f1d0)
 
 
 ---
