@@ -1,6 +1,6 @@
 // --- Konfigurasi dan Inisialisasi Firebase ---
 const firebaseConfig = {
-  apiKey: "AIzaSyAvgK3-CN1nqOQ_6hfhJOTEoNtyUkws-FWs",
+  apiKey: "AIzaSyAvgK3-CN1qOQ_6hfhJOTEoNtyUkws-FWs",
   authDomain: "buku-perpustakaan-d5800.firebaseapp.com",
   projectId: "buku-perpustakaan-d5800",
   storageBucket: "buku-perpustakaan-d5800.appspot.com",
