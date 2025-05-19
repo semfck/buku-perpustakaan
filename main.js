@@ -328,8 +328,6 @@ async function renderAdminPeminjaman() {
     el.innerHTML = "<div class='text-danger'>Gagal memuat data peminjaman</div>";
   }
 }
-
-// --- FUNGSI BARU: Hapus Riwayat Peminjaman ---
 window.hapusPeminjamanAdmin = async function(id) {
   if (!confirm("Yakin hapus riwayat peminjaman ini?")) return;
   try {
@@ -489,7 +487,6 @@ function updateJudulBukuTerpilih() {
 }
 
 // --- Peminjaman ---
-let pinjamList = JSON.parse(localStorage.getItem("riwayatPinjam") || "[]");
 document.getElementById('formPinjam').addEventListener('submit', async function(e) {
   e.preventDefault();
   const nama = document.getElementById('namaPeminjam').value.trim();
@@ -562,12 +559,10 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
         tglKembaliAsli: null
       };
       const docRef = await db.collection("peminjaman").add(data);
-      data.docId = docRef.id; // PATCH: Simpan docId Firestore
+      data.docId = docRef.id; // Simpan docId Firestore
       await db.collection("buku").doc(buku.id).update({ status: "dipinjam" });
-      pinjamList.push(data);
-      invoiceDetails.push(data);
+      invoiceDetails.push({...data});
     }
-    localStorage.setItem("riwayatPinjam", JSON.stringify(pinjamList));
     renderRiwayat();
     if (invoiceDetails.length === 1) showStrukPinjam(invoiceDetails[0]);
     else showStrukPinjamMulti(invoiceDetails, tglPinjam, tglKembali);
@@ -577,7 +572,6 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
     renderMultiBukuPinjam();
     showAlert('alertPinjam', 'success', 'Buku berhasil dipinjam!');
   } catch (error) {
-    // --- PENINGKATAN HANDLING 404 ---
     if (
       error.code === "not-found" ||
       (error.message && error.message.toLowerCase().indexOf("404") !== -1) ||
@@ -597,63 +591,67 @@ document.getElementById('formPinjam').addEventListener('submit', async function(
 });
 
 // --- Riwayat, Struk, dan Modal ---
-function renderRiwayat() {
+async function renderRiwayat() {
   const el = document.getElementById('riwayatTabel');
   if (!el) return;
-  if (pinjamList.length === 0) {
-    el.innerHTML = "<div class='text-muted text-center p-2'>Belum ada data peminjaman.</div>";
-    return;
-  }
-  const html = `
-    <table class="riwayat-tabel">
-      <thead>
-        <tr>
-          <th>Nama</th>
-          <th>ID</th>
-          <th>Judul Buku</th>
-          <th>Kategori</th>
-          <th>Tgl Pinjam</th>
-          <th>Tgl Kembali</th>
-          <th>Struk/Invoice</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${pinjamList.map((p, i) => `
-          <tr>
-            <td>${p.nama}</td>
-            <td>${p.idPeminjam}</td>
-            <td>${p.judul}</td>
-            <td>${p.kategori}</td>
-            <td>${formatTanggal(p.tglPinjam)}</td>
-            <td>${formatTanggal(p.tglKembali)}</td>
-            <td><button class="btn-struk" onclick="showStrukPinjamByIndex(${i})">Lihat</button></td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-  el.innerHTML = html;
-}
-
-// --- PATCH: showStrukPinjamByIndex fetch Firestore jika ada docId ---
-window.showStrukPinjamByIndex = async function(index) {
-  if (index >= 0 && index < pinjamList.length) {
-    const item = pinjamList[index];
-    if (item.docId) {
-      try {
-        const doc = await db.collection("peminjaman").doc(item.docId).get();
-        if (doc.exists) {
-          showStrukPinjam(doc.data());
-          return;
-        }
-      } catch (err) {
-        console.error("Gagal fetch Firestore:", err);
-      }
+  try {
+    const snapshot = await db.collection("peminjaman").orderBy("tglPinjam", "desc").get();
+    if (snapshot.empty) {
+      el.innerHTML = "<div class='text-muted text-center p-2'>Belum ada data peminjaman.</div>";
+      return;
     }
-    showStrukPinjam(item); // fallback jika gagal
+    const html = `
+      <table class="riwayat-tabel">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>ID</th>
+            <th>Judul Buku</th>
+            <th>Kategori</th>
+            <th>Tgl Pinjam</th>
+            <th>Tgl Kembali</th>
+            <th>Struk/Invoice</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${snapshot.docs.map((doc, i) => {
+            const p = doc.data();
+            return `
+              <tr>
+                <td>${p.nama}</td>
+                <td>${p.idPeminjam}</td>
+                <td>${p.judul}</td>
+                <td>${p.kategori}</td>
+                <td>${formatTanggal(p.tglPinjam?.toDate?.() || p.tglPinjam)}</td>
+                <td>${formatTanggal(p.tglKembali?.toDate?.() || p.tglKembali)}</td>
+                <td>
+                  <button class="btn-struk" onclick="showStrukPinjamFromFirestore('${doc.id}')">Lihat</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+    el.innerHTML = html;
+  } catch (err) {
+    el.innerHTML = "<div class='text-danger'>Gagal memuat data riwayat.</div>";
+    console.error(err);
+  }
+}
+window.showStrukPinjamFromFirestore = async function(docId) {
+  try {
+    const doc = await db.collection('peminjaman').doc(docId).get();
+    if (doc.exists) {
+      showStrukPinjam(doc.data());
+    } else {
+      showAlert('alertPinjam', 'danger', 'Data tidak ditemukan di Firestore');
+    }
+  } catch (err) {
+    showAlert('alertPinjam', 'danger', 'Gagal mengambil data struk dari Firestore');
+    console.error(err);
   }
 };
-
 function showStrukPinjam(data) {
   const tglKembaliAsli = data.tglKembaliAsli || null;
   const { denda, hariTelat } = calculateDenda(data.tglKembali, tglKembaliAsli);
