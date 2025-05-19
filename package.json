@@ -1,5 +1,24 @@
 {
   "dependencies": {
-    "firebase": "^11.7.3"
-  }
+    "firebase": "^11.7.3",
+    "firebase-admin": "^13.4.0"
+  },
+  "name": "buku-perpustakaan",
+  "version": "1.0.0",
+  "description": "**Perpustakaan Digital** adalah aplikasi web sederhana untuk manajemen peminjaman buku berbasis web dengan integrasi Firebase Firestore. Cocok untuk kebutuhan perpustakaan kecil, sekolah, komunitas, atau demo konsep peminjaman buku online.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/semfck/buku-perpustakaan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/semfck/buku-perpustakaan/issues"
+  },
+  "homepage": "https://github.com/semfck/buku-perpustakaan#readme"
 }
