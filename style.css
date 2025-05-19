@@ -631,3 +631,18 @@ footer {
   .hero h1 { font-size: 1.25rem; }
   #judulBukuTerpilih { font-size: .99rem;}
 }
+.btn-admin.btn-hapus {
+  background: linear-gradient(90deg,#f43f5e 70%,#fb7185 100%);
+  color: #fff;
+  border: none;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-weight: 500;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-admin.btn-hapus:hover {
+  background: linear-gradient(90deg,#be123c 60%,#f43f5e 100%);
+  color: #fff;
+}
