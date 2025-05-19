@@ -55,7 +55,18 @@ cd buku-perpustakaan
 
 ### 3. Jalankan di Browser
 
-Buka file `index.html` di browser (Chrome, Firefox, Edge, dsb).
+1. Pastikan Anda sudah mengisi konfigurasi Firebase di file `main.js` sesuai langkah sebelumnya.
+2. Buka file `index.html` langsung di browser (Chrome, Firefox, Edge, dsb).
+   - **Tidak perlu menjalankan server lokal atau menginstall package NPM.**
+   - Cukup klik dua kali file `index.html` atau buka melalui menu "Open File" di browser.
+3. Jika muncul error terkait CORS atau akses file lokal, Anda bisa gunakan ekstensi "Live Server" di VS Code atau jalankan server lokal sederhana, misal dengan Python:
+   ```bash
+   python -m http.server
+   ```
+   lalu akses `http://localhost:8000`.
+
+> **Catatan:**  
+> Jika Anda menggunakan layanan hosting (Netlify, Vercel, GitHub Pages), cukup upload semua file ke layanan tersebut.
 
 ---
 
